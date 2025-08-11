@@ -1,17 +1,17 @@
-import { Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigations/RootNavigator';
+import FlashMessage from 'react-native-flash-message';
 
 const App = () => {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar
-        translucent={Platform.OS === 'ios'}
-        backgroundColor="transparent"
-      />
-      <RootNavigator />
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <RootNavigator />
+      </GestureHandlerRootView>
+      <FlashMessage position="bottom" />
+    </SafeAreaProvider>
   );
 };
 
