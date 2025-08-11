@@ -1,63 +1,209 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import WrapperContainer from '../../components/WrapperContainer';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import CustomButton from '../../components/CustomButton';
+import CustomDatePicker from '../../components/CustomDatePicker';
 import CustomHeader from '../../components/CustomHeader';
+import CustomInput from '../../components/CustomInput';
+import WrapperContainer from '../../components/WrapperContainer';
 import { Colors } from '../../constants/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { goBack } from '../../utils/navigationRef';
 
-const ComponentName = () => {
-  useEffect(() => {
-    // TODO: Add your side effects here
-  }, []);
+type FormData = {
+  naam: string;
+  tarikh: Date;
+  thikana: string;
+  phone: string;
+  boilerSonkha: string;
+  kg: string;
+  rate: string;
+  ajekrBikri: string;
+  ajkerJoma: string;
+  bakiIzaAche: string;
+};
 
-  const onPressFab = () => {
-    // TODO: Handle FAB press
+const CreateBikroyReport = () => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    defaultValues: {
+      naam: '',
+      tarikh: new Date(),
+      thikana: '',
+      phone: '',
+      boilerSonkha: '',
+      kg: '',
+      rate: '',
+      ajekrBikri: '',
+      ajkerJoma: '',
+      bakiIzaAche: '',
+    },
+  });
+
+  const onSubmit = (data: FormData) => {
+    console.log('Form submitted:', data);
   };
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
-      <CustomHeader title="Create" />
-      <View style={styles.container}>
-        <Text style={styles.text}>Content goes here</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={onPressFab}
-        activeOpacity={0.7}
+      <CustomHeader
+        title="বিক্রয় রিপোর্ট তৈরি করুন"
+        leftIconName="arrow-back"
+        onLeftPress={() => goBack()}
+      />
+
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
       >
-        <Icon name="add" size={28} color={Colors.white} />
-      </TouchableOpacity>
+        <CustomInput
+          label="নাম"
+          placeholder="নাম লিখুন"
+          control={control}
+          name="naam"
+          rules={{ required: 'নাম আবশ্যক' }}
+          error={errors.naam}
+        />
+
+        <CustomDatePicker
+          label="তারিখ"
+          control={control}
+          name="tarikh"
+          rules={{ required: 'তারিখ নির্বাচন করুন' }}
+          maximumDate={new Date()}
+        />
+
+        <CustomInput
+          label="ঠিকানা"
+          placeholder="ঠিকানা লিখুন"
+          control={control}
+          name="thikana"
+          rules={{ required: 'ঠিকানা আবশ্যক' }}
+          error={errors.thikana}
+        />
+
+        <CustomInput
+          label="ফোন নম্বর"
+          placeholder="ফোন নম্বর লিখুন"
+          keyboardType="phone-pad"
+          control={control}
+          name="phone"
+          rules={{
+            required: 'ফোন নম্বর আবশ্যক',
+            pattern: {
+              value: /^[0-9]{10,15}$/,
+              message: 'সঠিক ফোন নম্বর লিখুন',
+            },
+          }}
+          error={errors.phone}
+        />
+
+        {/* Two inputs side-by-side */}
+        <View style={styles.row}>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="বয়লার সংখ্যা"
+              placeholder="বয়লার সংখ্যা লিখুন"
+              keyboardType="numeric"
+              control={control}
+              name="boilerSonkha"
+              rules={{ required: 'বয়লার সংখ্যা আবশ্যক' }}
+              error={errors.boilerSonkha}
+            />
+          </View>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="কেজি"
+              placeholder="কেজি লিখুন"
+              keyboardType="numeric"
+              control={control}
+              name="kg"
+              rules={{ required: 'কেজি আবশ্যক' }}
+              error={errors.kg}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="রেট"
+              placeholder="রেট লিখুন"
+              keyboardType="numeric"
+              control={control}
+              name="rate"
+              rules={{ required: 'রেট আবশ্যক' }}
+              error={errors.rate}
+            />
+          </View>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="আজকের জমা"
+              placeholder="আজকের জমা লিখুন"
+              keyboardType="numeric"
+              control={control}
+              name="ajkerJoma"
+              rules={{ required: 'আজকের জমা আবশ্যক' }}
+              error={errors.ajkerJoma}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="আজকের বিক্রি"
+              placeholder="আজকের বিক্রি লিখুন"
+              control={control}
+              name="ajekrBikri"
+              rules={{ required: 'আজকের বিক্রি আবশ্যক' }}
+              error={errors.ajekrBikri}
+            />
+          </View>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="বাকি/ইজ্জা আছে"
+              placeholder="বাকি/ইজ্জা লিখুন"
+              keyboardType="numeric"
+              control={control}
+              name="bakiIzaAche"
+              rules={{ required: 'বাকি/ইজ্জা আবশ্যক' }}
+              error={errors.bakiIzaAche}
+            />
+          </View>
+        </View>
+
+        <CustomButton
+          title="সাবমিট"
+          onPress={handleSubmit(onSubmit)}
+          style={styles.submitButton}
+        />
+      </ScrollView>
     </WrapperContainer>
   );
 };
 
-export default ComponentName;
+export default CreateBikroyReport;
 
 const styles = StyleSheet.create({
   container: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingBottom: 40,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  halfInput: {
     flex: 1,
-    padding: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginHorizontal: 5,
   },
-  text: {
-    fontSize: 16,
-    color: Colors.black,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 50,
-    right: 24,
-    backgroundColor: Colors.theme,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+  submitButton: {
+    marginTop: 30,
+    borderRadius: 10,
+    paddingVertical: 16,
   },
 });

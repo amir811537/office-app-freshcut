@@ -6,6 +6,7 @@ import {
   Linking,
   FlatList,
   ListRenderItem,
+  TouchableOpacity,
 } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
@@ -128,13 +129,13 @@ const BikroyReportMainIndex = () => {
         showsVerticalScrollIndicator={false}
       />
 
-      <CustomButton
-        title="+"
-        onPress={onPressFab}
+      <TouchableOpacity
         style={styles.fab}
-        textStyle={styles.fabText}
-        type="primary"
-      />
+        onPress={onPressFab}
+        activeOpacity={0.7}
+      >
+        <Icon name="add" size={28} color={Colors.white} />
+      </TouchableOpacity>
     </WrapperContainer>
   );
 };
