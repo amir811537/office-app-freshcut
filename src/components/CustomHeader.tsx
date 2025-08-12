@@ -15,10 +15,12 @@ type CustomHeaderProps = {
   onLeftPress?: () => void;
   rightIconName?: string; // icon name for right button (e.g., 'settings-outline')
   onRightPress?: () => void;
-  containerStyle?: ViewStyle;
-  titleStyle?: TextStyle;
+  containerStyle?: ViewStyle | ViewStyle[];
+  titleStyle?: TextStyle | TextStyle[];
   iconColor?: string;
   iconSize?: number;
+  accessibilityLabel?: string;
+  testID?: string;
 };
 
 const CustomHeader: React.FC<CustomHeaderProps> = ({
@@ -31,15 +33,25 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   titleStyle,
   iconColor = '#000',
   iconSize = 24,
+  accessibilityLabel,
+  testID,
 }) => {
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View
+      style={[styles.container, containerStyle]}
+      accessibilityRole="header"
+      accessibilityLabel={accessibilityLabel || title}
+      testID={testID}
+    >
       {/* Left icon */}
       {leftIconName ? (
         <TouchableOpacity
           onPress={onLeftPress}
           style={styles.iconButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          activeOpacity={0.7}
         >
           <Icon name={leftIconName} size={iconSize} color={iconColor} />
         </TouchableOpacity>
@@ -48,7 +60,11 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
       )}
 
       {/* Title */}
-      <Text style={[styles.title, titleStyle]} numberOfLines={1}>
+      <Text
+        style={[styles.title, titleStyle]}
+        numberOfLines={1}
+        accessible={true}
+      >
         {title}
       </Text>
 
@@ -58,6 +74,9 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
           onPress={onRightPress}
           style={styles.iconButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Options"
+          activeOpacity={0.7}
         >
           <Icon name={rightIconName} size={iconSize} color={iconColor} />
         </TouchableOpacity>
@@ -85,7 +104,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   iconPlaceholder: {
-    width: 32, // same size as iconButton to keep title centered
+    width: 40, // increased width for better balance with padding
   },
   title: {
     flex: 1,

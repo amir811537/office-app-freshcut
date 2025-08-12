@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatusBar, StyleSheet, View, ViewStyle } from 'react-native';
+import { StatusBar, StyleSheet, ViewStyle, Platform } from 'react-native';
 import {
   SafeAreaView,
   SafeAreaViewProps,
@@ -8,24 +8,40 @@ import { Colors } from '../constants/colors';
 
 interface WrapperContainerProps extends SafeAreaViewProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
+  statusBarStyle?: 'dark-content' | 'light-content' | 'default';
+  statusBarBackgroundColor?: string;
 }
 
-const WrapperContainer: React.FC<WrapperContainerProps> = ({
-  children,
-  style,
-  ...safeAreaProps
-}) => {
-  return (
-    <SafeAreaView
-      style={[styles.container, style, { backgroundColor: Colors.background }]}
-      {...safeAreaProps}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
-      {children}
-    </SafeAreaView>
-  );
-};
+const WrapperContainer: React.FC<WrapperContainerProps> = React.memo(
+  ({
+    children,
+    style,
+    statusBarStyle = 'dark-content',
+    statusBarBackgroundColor = '#fff',
+    ...safeAreaProps
+  }) => {
+    return (
+      <SafeAreaView
+        style={[
+          styles.container,
+          style,
+          { backgroundColor: Colors.background },
+        ]}
+        {...safeAreaProps}
+      >
+        <StatusBar
+          barStyle={statusBarStyle}
+          backgroundColor={
+            Platform.OS === 'android' ? statusBarBackgroundColor : undefined
+          }
+          translucent={false}
+        />
+        {children}
+      </SafeAreaView>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -33,4 +49,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(WrapperContainer);
+export default WrapperContainer;

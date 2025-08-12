@@ -8,8 +8,10 @@ import CustomInput from '../../components/CustomInput';
 import WrapperContainer from '../../components/WrapperContainer';
 import { Colors } from '../../constants/colors';
 import { goBack } from '../../utils/navigationRef';
+import CustomDropdown from '../../components/CustomDropdown';
 
 type FormData = {
+  occupation: number; // Added occupation to form data
   naam: string;
   tarikh: Date;
   thikana: string;
@@ -26,9 +28,11 @@ const CreateBikroyReport = () => {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
+      occupation: undefined, // Added default value for occupation
       naam: '',
       tarikh: new Date(),
       thikana: '',
@@ -43,7 +47,7 @@ const CreateBikroyReport = () => {
   });
 
   const onSubmit = (data: FormData) => {
-    console.log('Form submitted:', data);
+    console.log('Form submitted:', JSON.stringify(data, null, 2));
   };
 
   return (
@@ -58,11 +62,33 @@ const CreateBikroyReport = () => {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Occupation Dropdown */}
+        <CustomDropdown
+          name="occupation"
+          control={control}
+          label="পেশা"
+          placeholder="পেশা নির্বাচন করুন"
+          items={[
+            { value: 1, label: 'শিক্ষক', grade: 'A' },
+            { value: 2, label: 'চিকিৎসক', grade: 'B' },
+            { value: 3, label: 'প্রকৌশলী', grade: 'C' },
+          ]}
+          rules={{ required: 'পেশা নির্বাচন আবশ্যক' }}
+          error={errors.occupation}
+          onSelected={item => {
+            console.log(item);
+          }}
+        />
+
         <CustomInput
           label="নাম"
           placeholder="নাম লিখুন"
           control={control}
           name="naam"
+          onChangeText={e => {
+            setValue('naam', e);
+            console.log(e);
+          }}
           rules={{ required: 'নাম আবশ্যক' }}
           error={errors.naam}
         />

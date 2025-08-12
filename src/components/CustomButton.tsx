@@ -6,19 +6,24 @@ import {
   ViewStyle,
   TextStyle,
   GestureResponderEvent,
+  ActivityIndicator,
+  View,
 } from 'react-native';
 import { Colors } from '../constants/colors'; // adjust path if needed
 
 type ButtonType = 'primary' | 'secondary';
 
 interface CustomButtonProps {
-  title: string;
-  onPress: (event: GestureResponderEvent) => void;
+  title?: string;
+  onPress?: (event: GestureResponderEvent) => void;
   type?: ButtonType;
   disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
-  children?: React.ReactNode; // <-- added children support
+  loading?: boolean;
+  style?: ViewStyle | ViewStyle[];
+  textStyle?: TextStyle | TextStyle[];
+  children?: React.ReactNode;
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -26,29 +31,49 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   onPress,
   type = 'primary',
   disabled = false,
+  loading = false,
   style,
   textStyle,
   children,
+  accessibilityLabel,
+  testID,
 }) => {
-  const backgroundColor = disabled
-    ? Colors.disabled
-    : type === 'primary'
-    ? Colors.buttonPrimary
-    : Colors.buttonSecondary;
+  const backgroundColor =
+    disabled || loading
+      ? Colors.disabled
+      : type === 'primary'
+      ? Colors.buttonPrimary
+      : Colors.buttonSecondary;
 
-  const textColor = disabled ? Colors.inactive_tint : Colors.white;
+  const textColor = disabled || loading ? Colors.inactive_tint : Colors.white;
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={disabled ? undefined : onPress}
+      onPress={disabled || loading ? undefined : onPress}
       style={[styles.button, { backgroundColor }, style]}
-      disabled={disabled}
+      disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      testID={testID}
     >
-      {children}
-      <Text style={[styles.text, { color: textColor }, textStyle]}>
-        {title}
-      </Text>
+      <View style={styles.contentContainer}>
+        {loading ? (
+          <ActivityIndicator color={textColor} />
+        ) : (
+          <>
+            {children}
+            {title ? (
+              <Text
+                style={[styles.text, { color: textColor }, textStyle]}
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+            ) : null}
+          </>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
@@ -62,18 +87,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row', // add this to place icon & text horizontally
-    // Optional shadow for iOS
+    flexDirection: 'row',
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    // Optional elevation for Android
     elevation: 5,
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   text: {
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8, // space between icon and text
+    marginLeft: 8,
   },
 });
