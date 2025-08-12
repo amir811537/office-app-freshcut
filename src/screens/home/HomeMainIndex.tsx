@@ -5,6 +5,7 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
@@ -21,7 +22,11 @@ const menuItems = [
   { id: '5', title: 'প্রোডাক্ট', icon: 'cube' },
 ];
 
-const HomeMainIndex = ({ navigation }: any) => {
+const { width } = Dimensions.get('window');
+const ITEM_MARGIN = 8;
+const ITEM_WIDTH = (width - 32 - ITEM_MARGIN * 4) / 3; // 32 is total horizontal padding (16*2)
+
+const HomeMainIndex = () => {
   const onMenuPress = (item: (typeof menuItems)[0]) => {
     if (item.title === 'বিক্রয় রিপোর্ট') {
       navigate('BikroyReport');
@@ -45,14 +50,10 @@ const HomeMainIndex = ({ navigation }: any) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.menuGrid}>
-          {menuItems.map((item, index) => (
+          {menuItems.map(item => (
             <TouchableOpacity
               key={item.id}
-              style={[
-                styles.menuItem,
-                // Remove right margin on every 3rd item to prevent extra space at row end
-                (index + 1) % 3 === 0 && { marginRight: 0 },
-              ]}
+              style={styles.menuItem}
               onPress={() => onMenuPress(item)}
               activeOpacity={0.7}
             >
@@ -62,6 +63,14 @@ const HomeMainIndex = ({ navigation }: any) => {
               <Text style={styles.menuText}>{item.title}</Text>
             </TouchableOpacity>
           ))}
+
+          {/* Add empty views to maintain grid structure if items count not divisible by 3 */}
+          {menuItems.length % 3 !== 0 &&
+            Array.from({ length: 3 - (menuItems.length % 3) }).map(
+              (_, index) => (
+                <View key={`empty-${index}`} style={styles.emptyItem} />
+              ),
+            )}
         </View>
       </ScrollView>
     </WrapperContainer>
@@ -77,14 +86,13 @@ const styles = StyleSheet.create({
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start', // changed from space-between to flex-start
+    justifyContent: 'space-between',
   },
   menuItem: {
-    flexBasis: '32%',
+    width: ITEM_WIDTH,
     backgroundColor: Colors.card,
     borderRadius: 12,
-    marginBottom: 12,
-    marginRight: '2%', // horizontal gap between items
+    marginBottom: ITEM_MARGIN,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 20,
@@ -94,6 +102,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  emptyItem: {
+    width: ITEM_WIDTH,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    opacity: 0, // completely transparent
   },
   iconContainer: {
     marginBottom: 8,
