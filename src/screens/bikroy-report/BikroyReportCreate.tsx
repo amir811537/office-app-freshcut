@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Platform } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import CustomHeader from '../../components/CustomHeader';
@@ -8,10 +8,10 @@ import CustomInput from '../../components/CustomInput';
 import WrapperContainer from '../../components/WrapperContainer';
 import { Colors } from '../../constants/colors';
 import { goBack } from '../../utils/navigationRef';
-import CustomDropdown from '../../components/CustomDropdown';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 type FormData = {
-  occupation: number; // Added occupation to form data
+  occupation: number;
   naam: string;
   tarikh: Date;
   thikana: string;
@@ -32,7 +32,7 @@ const CreateBikroyReport = () => {
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
-      occupation: undefined, // Added default value for occupation
+      occupation: undefined,
       naam: '',
       tarikh: new Date(),
       thikana: '',
@@ -58,28 +58,21 @@ const CreateBikroyReport = () => {
         onLeftPress={() => goBack()}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.container}
+      <KeyboardAwareScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraHeight={Platform.OS === 'ios' ? 150 : 200}
+        extraScrollHeight={Platform.OS === 'ios' ? 120 : 150}
+        enableAutomaticScroll={true}
+        keyboardDismissMode="interactive"
+        keyboardOpeningTime={250}
+        resetScrollToCoords={{ x: 0, y: 0 }}
+        scrollEnabled={true}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Occupation Dropdown */}
-        <CustomDropdown
-          name="occupation"
-          control={control}
-          label="পেশা"
-          placeholder="পেশা নির্বাচন করুন"
-          items={[
-            { value: 1, label: 'শিক্ষক', grade: 'A' },
-            { value: 2, label: 'চিকিৎসক', grade: 'B' },
-            { value: 3, label: 'প্রকৌশলী', grade: 'C' },
-          ]}
-          rules={{ required: 'পেশা নির্বাচন আবশ্যক' }}
-          error={errors.occupation}
-          onSelected={item => {
-            console.log(item);
-          }}
-        />
-
         <CustomInput
           label="নাম"
           placeholder="নাম লিখুন"
@@ -126,7 +119,6 @@ const CreateBikroyReport = () => {
           error={errors.phone}
         />
 
-        {/* Two inputs side-by-side */}
         <View style={styles.row}>
           <View style={styles.halfInput}>
             <CustomInput
@@ -206,7 +198,10 @@ const CreateBikroyReport = () => {
           onPress={handleSubmit(onSubmit)}
           style={styles.submitButton}
         />
-      </ScrollView>
+
+        {/* Bottom spacer for keyboard clearance */}
+        <View style={styles.bottomSpacer} />
+      </KeyboardAwareScrollView>
     </WrapperContainer>
   );
 };
@@ -214,22 +209,28 @@ const CreateBikroyReport = () => {
 export default CreateBikroyReport;
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    paddingBottom: 40,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 8,
   },
   halfInput: {
     flex: 1,
-    marginHorizontal: 5,
   },
   submitButton: {
     marginTop: 30,
     borderRadius: 10,
     paddingVertical: 16,
+  },
+  bottomSpacer: {
+    height: 100, // Extra space at bottom for keyboard clearance
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,52 +16,35 @@ import CustomCard from '../../components/CustomCard';
 import dayjs from 'dayjs';
 import { navigate, goBack } from '../../utils/navigationRef';
 import CustomButton from '../../components/CustomButton';
-
-type ReportItem = {
-  id: string;
-  name: string;
-  address: string;
-  sale: string;
-  deposit: string;
-  balance: string;
-  phone: string;
-  date: string;
-};
-
-const dummyData: ReportItem[] = [
-  {
-    id: '1',
-    name: 'সোহাগ মামা',
-    address: 'চট্টগ্রাম, বাংলাদেশ',
-    sale: 'বয়লার ৪০০ পিস (৩০০.৫ কেজি × ১৪) = ৪৩,৮৭৩',
-    deposit: '১৫,০০০',
-    balance: '৪৫৬,০০০',
-    phone: '0182248347',
-    date: dayjs().format('DD MMMM YYYY'),
-  },
-  {
-    id: '2',
-    name: 'রহিম ভাই',
-    address: 'ঢাকা, বাংলাদেশ',
-    sale: 'কোকেন ২০০ পিস (১৫০ কেজি × ১২) = ১৮,০০০',
-    deposit: '২০,০০০',
-    balance: '১২,০০০',
-    phone: '0198765432',
-    date: dayjs().subtract(1, 'day').format('DD MMMM YYYY'),
-  },
-  {
-    id: '3',
-    name: 'জামাল কাকু',
-    address: 'রাজশাহী, বাংলাদেশ',
-    sale: 'ডিম ৫০০ পিস (২০০ কেজি × ১০) = ৫০,০০০',
-    deposit: '৩০,০০০',
-    balance: '২০,০০০',
-    phone: '0171234567',
-    date: dayjs().subtract(2, 'day').format('DD MMMM YYYY'),
-  },
-];
+import { getReports } from '../../services/reportService';
+import { CustomerReportTs } from '../../types/reportTypes';
+import { toBanglaNumber } from '../../utils/numberUtils';
+import CustomLoader from '../../components/CustomLoader';
 
 const BikroyReportMainIndex = () => {
+  const [landingData, setLandingData] = useState<CustomerReportTs[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const response = await getReports();
+        setLandingData(response);
+      } catch (error) {
+        console.log('error is', JSON.stringify(error, null, 2));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Calculate total sale
+  const totalSale = landingData.reduce(
+    (sum, item) => sum + Number(item.todaySell),
+    0,
+  );
+
   const onPressFab = () => {
     navigate('BikroyReportCreate');
   };
@@ -74,10 +57,10 @@ const BikroyReportMainIndex = () => {
     Linking.openURL(`tel:${phone}`);
   };
 
-  const renderItem: ListRenderItem<ReportItem> = ({ item }) => (
+  const renderItem: ListRenderItem<CustomerReportTs> = ({ item }) => (
     <CustomCard style={styles.card}>
       <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.date}>{item.date}</Text>
+      <Text style={styles.date}>{dayjs(item.date).format('DD/MM/YYYY')}</Text>
 
       <View style={styles.divider} />
 
@@ -88,21 +71,21 @@ const BikroyReportMainIndex = () => {
 
       <View style={styles.row}>
         <Text style={styles.label}>আজকের বিক্রি</Text>
-        <Text style={styles.value}>{item.sale}</Text>
+        <Text style={styles.value}>{toBanglaNumber(item.todaySell)}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>আজকের জমা</Text>
-        <Text style={styles.value}>{item.deposit}</Text>
+        <Text style={styles.value}>{toBanglaNumber(item.payment)}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>ইজ্জা/বাকি আছে</Text>
-        <Text style={styles.value}>{item.balance}</Text>
+        <Text style={styles.value}>{toBanglaNumber(item.due)}</Text>
       </View>
 
       <CustomButton
-        title={`কল করুন: ${item.phone}`}
+        title={`কল করুন: ${toBanglaNumber(item.phone)}`}
         onPress={() => callNumber(item.phone)}
         style={styles.callButton}
         textStyle={styles.callText}
@@ -121,13 +104,25 @@ const BikroyReportMainIndex = () => {
         onLeftPress={onBackPress}
       />
 
-      <FlatList
-        data={dummyData}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <CustomLoader loading={loading} />
+      ) : (
+        <>
+          <View style={styles.totalSaleContainer}>
+            <Text style={styles.totalSaleText}>
+              মোট বিক্রি: {toBanglaNumber(totalSale)}
+            </Text>
+          </View>
+
+          <FlatList
+            data={landingData}
+            keyExtractor={item => item._id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        </>
+      )}
 
       <TouchableOpacity
         style={styles.fab}
@@ -143,6 +138,18 @@ const BikroyReportMainIndex = () => {
 export default BikroyReportMainIndex;
 
 const styles = StyleSheet.create({
+  totalSaleContainer: {
+    padding: 16,
+    backgroundColor: Colors.card,
+    marginHorizontal: 16,
+    marginVertical: 10,
+    borderRadius: 12,
+  },
+  totalSaleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.theme,
+  },
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 100, // space for FAB
@@ -210,12 +217,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 6,
     backgroundColor: Colors.theme,
-  },
-  fabText: {
-    fontSize: 32,
-    lineHeight: 32,
-    color: Colors.white,
-    fontWeight: '700',
-    textAlign: 'center',
   },
 });
