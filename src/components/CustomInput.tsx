@@ -21,6 +21,7 @@ interface CustomInputProps extends TextInputProps {
   labelStyle?: TextStyle;
   errorStyle?: TextStyle;
   error?: FieldError | undefined;
+  disabled?: boolean; // ✅ new prop
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({
@@ -33,6 +34,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
   labelStyle,
   errorStyle,
   error,
+  disabled = false,
   ...inputProps
 }) => {
   return (
@@ -45,10 +47,17 @@ const CustomInput: React.FC<CustomInputProps> = ({
         rules={rules}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
-            style={[styles.input, inputStyle, error ? styles.inputError : null]}
+            style={[
+              styles.input,
+              inputStyle,
+              error ? styles.inputError : null,
+              disabled ? styles.inputDisabled : null, // ✅ apply disabled style
+            ]}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
+            editable={!disabled} // ✅ make input non-editable
+            placeholderTextColor={disabled ? Colors.lightText : undefined} // optional
             {...inputProps}
           />
         )}
@@ -87,6 +96,10 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: Colors.error,
+  },
+  inputDisabled: {
+    backgroundColor: Colors.disabled, // updated color
+    color: Colors.inactive_tint, // updated text color
   },
   errorText: {
     marginTop: 4,

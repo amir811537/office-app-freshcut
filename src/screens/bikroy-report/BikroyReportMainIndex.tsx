@@ -20,24 +20,29 @@ import { getReports } from '../../services/reportService';
 import { CustomerReportTs } from '../../types/reportTypes';
 import { toBanglaNumber } from '../../utils/numberUtils';
 import CustomLoader from '../../components/CustomLoader';
+import { useIsFocused } from '@react-navigation/native'; // ✅
 
 const BikroyReportMainIndex = () => {
   const [landingData, setLandingData] = useState<CustomerReportTs[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const isFocused = useIsFocused(); // ✅ track screen focus
+
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const response = await getReports();
+      console.log(JSON.stringify(response[0], null, 2));
+      setLandingData(response);
+    } catch (error) {
+      console.log('error is', JSON.stringify(error, null, 2));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const response = await getReports();
-        setLandingData(response);
-      } catch (error) {
-        console.log('error is', JSON.stringify(error, null, 2));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    fetchReports();
+  }, [isFocused]);
 
   // Calculate total sale
   const totalSale = landingData.reduce(
@@ -57,44 +62,66 @@ const BikroyReportMainIndex = () => {
     Linking.openURL(`tel:${phone}`);
   };
 
-  const renderItem: ListRenderItem<CustomerReportTs> = ({ item }) => (
-    <CustomCard style={styles.card}>
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.date}>{dayjs(item.date).format('DD/MM/YYYY')}</Text>
+  const renderItem: ListRenderItem<CustomerReportTs> = ({ item }) => {
+    const boilerCount = item.boilerQtypes || '0'; // number of boilers
+    const qty = Number(item.boilerQtykg) || 0; // total kg
+    const rate = Number(item.boilerRate) || 0; // rate per kg
+    const totalSell = Number(item.todaySell) || 0;
 
-      <View style={styles.divider} />
+    const calculationText = `বয়লার ${boilerCount}পিছ (${toBanglaNumber(
+      qty,
+    )} kg × ${toBanglaNumber(rate)}) = ${toBanglaNumber(totalSell)} টাকা`;
 
-      <View style={styles.row}>
-        <Text style={styles.label}>ঠিকানা</Text>
-        <Text style={styles.value}>{item.address}</Text>
-      </View>
+    const onEditPress = () => {
+      navigate('BikroyReportCreate', { reportData: item });
+    };
 
-      <View style={styles.row}>
-        <Text style={styles.label}>আজকের বিক্রি</Text>
-        <Text style={styles.value}>{toBanglaNumber(item.todaySell)}</Text>
-      </View>
+    return (
+      <CustomCard style={styles.card}>
+        {/* Top Row with Name and Edit Icon */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={styles.name}>{item.name}</Text>
+          <TouchableOpacity onPress={onEditPress}>
+            <Icon name="create-outline" size={22} color={Colors.theme} />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>আজকের জমা</Text>
-        <Text style={styles.value}>{toBanglaNumber(item.payment)}</Text>
-      </View>
+        <Text style={styles.date}>{dayjs(item.date).format('DD/MM/YYYY')}</Text>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>ইজ্জা/বাকি আছে</Text>
-        <Text style={styles.value}>{toBanglaNumber(item.due)}</Text>
-      </View>
+        <View style={styles.divider} />
 
-      <CustomButton
-        title={`কল করুন: ${toBanglaNumber(item.phone)}`}
-        onPress={() => callNumber(item.phone)}
-        style={styles.callButton}
-        textStyle={styles.callText}
-        type="primary"
-      >
-        <Icon name="call" size={18} color={Colors.white} />
-      </CustomButton>
-    </CustomCard>
-  );
+        <View style={styles.row}>
+          <Text style={styles.label}>ঠিকানা</Text>
+          <Text style={styles.value}>{item.address}</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>আজকের বিক্রি</Text>
+          <Text style={styles.value}>{calculationText}</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>আজকের জমা</Text>
+          <Text style={styles.value}>{toBanglaNumber(item.payment)} টাকা</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>ইজা/বাকি আছে</Text>
+          <Text style={styles.value}>{toBanglaNumber(item.due)} টাকা</Text>
+        </View>
+
+        <CustomButton
+          title={`কল করুন: ${toBanglaNumber(item.phone)}`}
+          onPress={() => callNumber(item.phone)}
+          style={styles.callButton}
+          textStyle={styles.callText}
+          type="primary"
+        >
+          <Icon name="call" size={18} color={Colors.white} />
+        </CustomButton>
+      </CustomCard>
+    );
+  };
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>

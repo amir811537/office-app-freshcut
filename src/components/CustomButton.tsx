@@ -58,20 +58,17 @@ const CustomButton: React.FC<CustomButtonProps> = ({
       testID={testID}
     >
       <View style={styles.contentContainer}>
-        {loading ? (
-          <ActivityIndicator color={textColor} />
-        ) : (
-          <>
-            {children}
-            {title ? (
-              <Text
-                style={[styles.text, { color: textColor }, textStyle]}
-                numberOfLines={1}
-              >
-                {title}
-              </Text>
-            ) : null}
-          </>
+        {loading && (
+          <ActivityIndicator color={textColor} style={{ marginRight: 8 }} />
+        )}
+        {children}
+        {title && (
+          <Text
+            style={[styles.text, { color: textColor }, textStyle]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
         )}
       </View>
     </TouchableOpacity>

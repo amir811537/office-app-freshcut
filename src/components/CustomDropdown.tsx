@@ -15,7 +15,7 @@ import { Colors } from '../constants/colors';
 interface DropdownItem {
   value: number | string;
   label: string;
-  [key: string]: any; // allow extra fields
+  [key: string]: any;
 }
 
 interface CustomDropdownProps {
@@ -31,7 +31,8 @@ interface CustomDropdownProps {
   dropdownTextStyle?: TextStyle;
   errorStyle?: TextStyle;
   error?: FieldError | undefined;
-  onSelected?: (item: DropdownItem) => void; // callback with full object
+  onSelected?: (item: DropdownItem) => void;
+  disabled?: boolean; // ✅ added disabled prop
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -48,6 +49,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   errorStyle,
   error,
   onSelected,
+  disabled = false, // default false
 }) => {
   const [visible, setVisible] = useState(false);
 
@@ -66,7 +68,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
               : items.find(item => item.value === value);
 
           const handleSelect = (item: DropdownItem) => {
-            onChange(item); // store full object in form state
+            onChange(item); // store full object
             setVisible(false);
             onSelected?.(item);
           };
@@ -78,42 +80,54 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   styles.dropdown,
                   dropdownStyle,
                   error ? styles.inputError : null,
+                  disabled && styles.disabledDropdown, // ✅ gray background
                 ]}
-                onPress={() => setVisible(true)}
+                onPress={() => !disabled && setVisible(true)} // ✅ disable interaction
+                activeOpacity={0.7}
               >
-                <Text style={[styles.dropdownText, dropdownTextStyle]}>
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    dropdownTextStyle,
+                    disabled && styles.disabledText, // ✅ gray text
+                  ]}
+                >
                   {selectedItem?.label ?? placeholder}
                 </Text>
-                <Text style={styles.arrow}>▼</Text>
+                <Text style={[styles.arrow, disabled && styles.disabledText]}>
+                  ▼
+                </Text>
               </TouchableOpacity>
 
-              <Modal
-                visible={visible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setVisible(false)}
-              >
-                <TouchableOpacity
-                  style={styles.modalOverlay}
-                  activeOpacity={1}
-                  onPress={() => setVisible(false)}
+              {!disabled && (
+                <Modal
+                  visible={visible}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setVisible(false)}
                 >
-                  <View style={styles.modalContent}>
-                    <FlatList
-                      data={items}
-                      keyExtractor={item => item.value.toString()}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          style={styles.item}
-                          onPress={() => handleSelect(item)}
-                        >
-                          <Text style={styles.itemText}>{item.label}</Text>
-                        </TouchableOpacity>
-                      )}
-                    />
-                  </View>
-                </TouchableOpacity>
-              </Modal>
+                  <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setVisible(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <FlatList
+                        data={items}
+                        keyExtractor={item => item.value.toString()}
+                        renderItem={({ item }) => (
+                          <TouchableOpacity
+                            style={styles.item}
+                            onPress={() => handleSelect(item)}
+                          >
+                            <Text style={styles.itemText}>{item.label}</Text>
+                          </TouchableOpacity>
+                        )}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+              )}
             </>
           );
         }}
@@ -150,9 +164,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  disabledDropdown: {
+    backgroundColor: Colors.disabled, // light gray when disabled
+  },
   dropdownText: {
     fontSize: 16,
     color: Colors.black,
+  },
+  disabledText: {
+    color: Colors.inactive_tint, // gray text when disabled
   },
   inputError: {
     borderColor: Colors.error,

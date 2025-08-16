@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Platform } from 'react-native';
 import { useForm } from 'react-hook-form';
-import { ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { showMessage } from 'react-native-flash-message';
+
 import CustomButton from '../../components/CustomButton';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import CustomHeader from '../../components/CustomHeader';
@@ -8,10 +11,10 @@ import CustomInput from '../../components/CustomInput';
 import WrapperContainer from '../../components/WrapperContainer';
 import { Colors } from '../../constants/colors';
 import { goBack } from '../../utils/navigationRef';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { createReport, updateReport } from '../../services/reportService';
+import { CreateReportPayload, CustomerReportTs } from '../../types/reportTypes';
 
 type FormData = {
-  occupation: number;
   naam: string;
   tarikh: Date;
   thikana: string;
@@ -24,15 +27,27 @@ type FormData = {
   bakiIzaAche: string;
 };
 
-const CreateBikroyReport = () => {
+interface Props {
+  route?: {
+    params?: {
+      reportData?: CustomerReportTs;
+    };
+  };
+}
+
+const CreateBikroyReport: React.FC<Props> = ({ route }) => {
+  const reportData = route?.params?.reportData; // undefined if creating new
+  const isEditMode = !!reportData?._id;
+
+  const [loading, setLoading] = useState(false);
+
   const {
     control,
     handleSubmit,
-    setValue,
+    reset,
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
-      occupation: undefined,
       naam: '',
       tarikh: new Date(),
       thikana: '',
@@ -46,14 +61,102 @@ const CreateBikroyReport = () => {
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    console.log('Form submitted:', JSON.stringify(data, null, 2));
+  // Prefill fields in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      reset({
+        naam: reportData!.name,
+        tarikh: new Date(reportData!.date),
+        thikana: reportData!.address,
+        phone: reportData!.phone,
+        boilerSonkha: reportData!.boilerQtypes,
+        kg: reportData!.boilerQtykg,
+        rate: reportData!.boilerRate,
+        ajekrBikri: reportData!.todaySell.toString(),
+        ajkerJoma: reportData!.payment.toString(),
+        bakiIzaAche: reportData!.due.toString(),
+      });
+    }
+  }, [isEditMode, reportData, reset]);
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      setLoading(true);
+
+      if (isEditMode) {
+        const payload = {
+          payment: Number(data.ajkerJoma),
+          due: Number(data.bakiIzaAche),
+          boilerRate: data.rate,
+        };
+
+        const res = await updateReport(reportData!._id, payload);
+
+        if (res?.message === 'User updated successfully') {
+          showMessage({
+            message: 'রিপোর্ট সফলভাবে আপডেট করা হয়েছে ✅',
+            type: 'success',
+            icon: 'success',
+            duration: 2000,
+            floating: true,
+            onHide: () => goBack(),
+          });
+        } else {
+          showMessage({
+            message: 'আপডেট করা যায়নি ❌',
+            type: 'danger',
+            icon: 'danger',
+            duration: 2000,
+            floating: true,
+          });
+        }
+      } else {
+        const payload: CreateReportPayload = {
+          name: data.naam,
+          date: data.tarikh.toISOString().split('T')[0],
+          address: data.thikana,
+          phone: data.phone,
+          boilerRate: data.rate,
+          todaySell: Number(data.ajekrBikri),
+          payment: Number(data.ajkerJoma),
+          due: Number(data.bakiIzaAche),
+          boilerQtykg: data.kg,
+          boilerQtypes: data.boilerSonkha,
+        };
+
+        await createReport(payload);
+
+        showMessage({
+          message: 'রিপোর্ট সফলভাবে সংরক্ষণ করা হয়েছে ✅',
+          type: 'success',
+          icon: 'success',
+          duration: 2000,
+          floating: true,
+          onHide: () => goBack(),
+        });
+      }
+    } catch (error) {
+      console.error('Error saving report:', error);
+      showMessage({
+        message: 'রিপোর্ট সংরক্ষণে সমস্যা হয়েছে ❌',
+        type: 'danger',
+        icon: 'danger',
+        duration: 2000,
+        floating: true,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader
-        title="বিক্রয় রিপোর্ট তৈরি করুন"
+        title={
+          isEditMode
+            ? 'বিক্রয় রিপোর্ট সম্পাদনা করুন'
+            : 'বিক্রয় রিপোর্ট তৈরি করুন'
+        }
         leftIconName="arrow-back"
         onLeftPress={() => goBack()}
       />
@@ -62,96 +165,84 @@ const CreateBikroyReport = () => {
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
+        enableOnAndroid
         extraHeight={Platform.OS === 'ios' ? 150 : 200}
         extraScrollHeight={Platform.OS === 'ios' ? 120 : 150}
-        enableAutomaticScroll={true}
+        enableAutomaticScroll
         keyboardDismissMode="interactive"
         keyboardOpeningTime={250}
         resetScrollToCoords={{ x: 0, y: 0 }}
-        scrollEnabled={true}
+        scrollEnabled
         bounces={false}
         showsVerticalScrollIndicator={false}
       >
+        {/* Disabled fields in edit mode */}
         <CustomInput
           label="নাম"
-          placeholder="নাম লিখুন"
           control={control}
           name="naam"
-          onChangeText={e => {
-            setValue('naam', e);
-            console.log(e);
-          }}
-          rules={{ required: 'নাম আবশ্যক' }}
+          disabled={isEditMode}
+          rules={!isEditMode ? { required: 'নাম আবশ্যক' } : undefined}
           error={errors.naam}
         />
-
         <CustomDatePicker
           label="তারিখ"
           control={control}
           name="tarikh"
-          rules={{ required: 'তারিখ নির্বাচন করুন' }}
+          disabled={isEditMode}
+          rules={!isEditMode ? { required: 'তারিখ আবশ্যক' } : undefined}
+          error={errors.tarikh}
           maximumDate={new Date()}
         />
-
         <CustomInput
           label="ঠিকানা"
-          placeholder="ঠিকানা লিখুন"
           control={control}
           name="thikana"
-          rules={{ required: 'ঠিকানা আবশ্যক' }}
+          disabled={isEditMode}
+          rules={!isEditMode ? { required: 'ঠিকানা আবশ্যক' } : undefined}
           error={errors.thikana}
         />
-
         <CustomInput
           label="ফোন নম্বর"
-          placeholder="ফোন নম্বর লিখুন"
-          keyboardType="phone-pad"
           control={control}
           name="phone"
-          rules={{
-            required: 'ফোন নম্বর আবশ্যক',
-            pattern: {
-              value: /^[0-9]{10,15}$/,
-              message: 'সঠিক ফোন নম্বর লিখুন',
-            },
-          }}
+          disabled={isEditMode}
+          rules={!isEditMode ? { required: 'ফোন নম্বর আবশ্যক' } : undefined}
           error={errors.phone}
         />
-
         <View style={styles.row}>
           <View style={styles.halfInput}>
             <CustomInput
               label="বয়লার সংখ্যা"
-              placeholder="বয়লার সংখ্যা লিখুন"
-              keyboardType="numeric"
               control={control}
               name="boilerSonkha"
-              rules={{ required: 'বয়লার সংখ্যা আবশ্যক' }}
+              disabled={isEditMode}
+              rules={
+                !isEditMode ? { required: 'বয়লার সংখ্যা আবশ্যক' } : undefined
+              }
               error={errors.boilerSonkha}
             />
           </View>
           <View style={styles.halfInput}>
             <CustomInput
               label="কেজি"
-              placeholder="কেজি লিখুন"
-              keyboardType="numeric"
               control={control}
               name="kg"
-              rules={{ required: 'কেজি আবশ্যক' }}
+              disabled={isEditMode}
+              rules={!isEditMode ? { required: 'কেজি আবশ্যক' } : undefined}
               error={errors.kg}
             />
           </View>
         </View>
 
+        {/* Always editable fields */}
         <View style={styles.row}>
           <View style={styles.halfInput}>
             <CustomInput
               label="রেট"
-              placeholder="রেট লিখুন"
-              keyboardType="numeric"
               control={control}
               name="rate"
+              keyboardType="numeric"
               rules={{ required: 'রেট আবশ্যক' }}
               error={errors.rate}
             />
@@ -159,10 +250,9 @@ const CreateBikroyReport = () => {
           <View style={styles.halfInput}>
             <CustomInput
               label="আজকের জমা"
-              placeholder="আজকের জমা লিখুন"
-              keyboardType="numeric"
               control={control}
               name="ajkerJoma"
+              keyboardType="numeric"
               rules={{ required: 'আজকের জমা আবশ্যক' }}
               error={errors.ajkerJoma}
             />
@@ -173,20 +263,21 @@ const CreateBikroyReport = () => {
           <View style={styles.halfInput}>
             <CustomInput
               label="আজকের বিক্রি"
-              placeholder="আজকের বিক্রি লিখুন"
               control={control}
               name="ajekrBikri"
-              rules={{ required: 'আজকের বিক্রি আবশ্যক' }}
+              keyboardType="numeric"
+              rules={
+                !isEditMode ? { required: 'আজকের বিক্রি আবশ্যক' } : undefined
+              }
               error={errors.ajekrBikri}
             />
           </View>
           <View style={styles.halfInput}>
             <CustomInput
               label="বাকি/ইজ্জা আছে"
-              placeholder="বাকি/ইজ্জা লিখুন"
-              keyboardType="numeric"
               control={control}
               name="bakiIzaAche"
+              keyboardType="numeric"
               rules={{ required: 'বাকি/ইজ্জা আবশ্যক' }}
               error={errors.bakiIzaAche}
             />
@@ -194,12 +285,12 @@ const CreateBikroyReport = () => {
         </View>
 
         <CustomButton
-          title="সাবমিট"
+          loading={loading}
+          title={isEditMode ? 'আপডেট করুন' : 'সাবমিট'}
           onPress={handleSubmit(onSubmit)}
           style={styles.submitButton}
         />
 
-        {/* Bottom spacer for keyboard clearance */}
         <View style={styles.bottomSpacer} />
       </KeyboardAwareScrollView>
     </WrapperContainer>
@@ -209,28 +300,10 @@ const CreateBikroyReport = () => {
 export default CreateBikroyReport;
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  submitButton: {
-    marginTop: 30,
-    borderRadius: 10,
-    paddingVertical: 16,
-  },
-  bottomSpacer: {
-    height: 100, // Extra space at bottom for keyboard clearance
-  },
+  scrollView: { flex: 1 },
+  contentContainer: { flexGrow: 1, paddingHorizontal: 16, paddingVertical: 10 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  halfInput: { flex: 1 },
+  submitButton: { marginTop: 30, borderRadius: 10, paddingVertical: 16 },
+  bottomSpacer: { height: 100 },
 });

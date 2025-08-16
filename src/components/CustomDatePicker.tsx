@@ -31,6 +31,7 @@ interface CustomDatePickerProps {
   placeholder?: string;
   accessibilityLabel?: string;
   testID?: string;
+  disabled?: boolean; // ✅ add disabled prop
 }
 
 const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
@@ -48,6 +49,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   placeholder = 'তারিখ নির্বাচন করুন',
   accessibilityLabel,
   testID,
+  disabled = false, // default false
 }) => {
   const [showPicker, setShowPicker] = useState(false);
 
@@ -80,21 +82,27 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                 styles.input,
                 inputStyle,
                 error ? styles.inputError : null,
+                disabled && styles.disabledInput, // ✅ gray background when disabled
               ]}
-              onPress={() => setShowPicker(true)}
+              onPress={() => !disabled && setShowPicker(true)} // ✅ prevent opening picker
               activeOpacity={0.7}
               accessibilityLabel={accessibilityLabel || label || placeholder}
               accessibilityRole="button"
               testID={testID}
             >
               <Text
-                style={[styles.text, textStyle, !value && styles.placeholder]}
+                style={[
+                  styles.text,
+                  textStyle,
+                  !value && styles.placeholder,
+                  disabled && styles.disabledText, // ✅ gray text when disabled
+                ]}
               >
                 {displayDate}
               </Text>
             </TouchableOpacity>
 
-            {showPicker && (
+            {showPicker && !disabled && (
               <DateTimePicker
                 value={value || new Date()}
                 mode="date"
@@ -152,5 +160,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     color: Colors.error,
+  },
+  disabledInput: {
+    backgroundColor: Colors.disabled, // light gray background
+  },
+  disabledText: {
+    color: Colors.inactive_tint, // gray text
   },
 });
