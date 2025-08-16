@@ -7,6 +7,7 @@ import {
   FlatList,
   ListRenderItem,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
@@ -16,25 +17,25 @@ import CustomCard from '../../components/CustomCard';
 import dayjs from 'dayjs';
 import { navigate, goBack } from '../../utils/navigationRef';
 import CustomButton from '../../components/CustomButton';
-import { getReports } from '../../services/reportService';
+import { getReports, deleteReport } from '../../services/reportService';
 import { CustomerReportTs } from '../../types/reportTypes';
 import { toBanglaNumber } from '../../utils/numberUtils';
 import CustomLoader from '../../components/CustomLoader';
-import { useIsFocused } from '@react-navigation/native'; // ✅
+import { useIsFocused } from '@react-navigation/native';
+import { showMessage } from 'react-native-flash-message';
 
 const BikroyReportMainIndex = () => {
   const [landingData, setLandingData] = useState<CustomerReportTs[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const isFocused = useIsFocused(); // ✅ track screen focus
+  const isFocused = useIsFocused();
 
   const fetchReports = async () => {
     setLoading(true);
     try {
       const response = await getReports();
-      console.log(JSON.stringify(response[0], null, 2));
       setLandingData(response);
     } catch (error) {
-      console.log('error is', JSON.stringify(error, null, 2));
+      console.log('error fetching reports', error);
     } finally {
       setLoading(false);
     }
@@ -62,6 +63,44 @@ const BikroyReportMainIndex = () => {
     Linking.openURL(`tel:${phone}`);
   };
 
+const handleDelete = (id: string) => {
+  Alert.alert('Confirm Delete', 'Are you sure you want to delete this report?', [
+    { text: 'Cancel', style: 'cancel' },
+    {
+      text: 'Delete',
+      style: 'destructive',
+      onPress: async () => {
+        try {
+          setLoading(true);
+          await deleteReport(id);
+
+          showMessage({
+            message: 'রিপোর্ট সফলভাবে ডিলিট হয়েছে 🗑️',
+            type: 'success',
+            icon: 'success',
+            duration: 2000,
+            floating: true,
+          });
+
+          await fetchReports(); // refresh after deletion
+        } catch (err:any) {
+          console.log('Delete error', err.message);
+          showMessage({
+            message:err?.message|| 'ডিলিট করার সময় একটি সমস্যা হয়েছে ❌',
+            type: 'danger',
+            icon: 'danger',
+            duration: 2500,
+            floating: true,
+          });
+        } finally {
+          setLoading(false);
+        }
+      },
+    },
+  ]);
+};
+
+
   const renderItem: ListRenderItem<CustomerReportTs> = ({ item }) => {
     const boilerCount = item.boilerQtypes || '0'; // number of boilers
     const qty = Number(item.boilerQtykg) || 0; // total kg
@@ -78,8 +117,8 @@ const BikroyReportMainIndex = () => {
 
     return (
       <CustomCard style={styles.card}>
-        {/* Top Row with Name and Edit Icon */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        {/* Top Row with Name + Edit */}
+        <View style={styles.headerRow}>
           <Text style={styles.name}>{item.name}</Text>
           <TouchableOpacity onPress={onEditPress}>
             <Icon name="create-outline" size={22} color={Colors.theme} />
@@ -110,6 +149,7 @@ const BikroyReportMainIndex = () => {
           <Text style={styles.value}>{toBanglaNumber(item.due)} টাকা</Text>
         </View>
 
+        {/* Action Buttons */}
         <CustomButton
           title={`কল করুন: ${toBanglaNumber(item.phone)}`}
           onPress={() => callNumber(item.phone)}
@@ -118,6 +158,16 @@ const BikroyReportMainIndex = () => {
           type="primary"
         >
           <Icon name="call" size={18} color={Colors.white} />
+        </CustomButton>
+
+        <CustomButton
+          title="ডিলিট করুন"
+          onPress={() => handleDelete(item._id)}
+          style={styles.deleteButton}
+          textStyle={styles.deleteText}
+          type="secondary"
+        >
+          <Icon name="trash-outline" size={18} color={Colors.white} />
         </CustomButton>
       </CustomCard>
     );
@@ -179,13 +229,17 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 100, // space for FAB
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: Colors.card,
     padding: 24,
     borderRadius: 16,
     marginBottom: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   name: {
     fontSize: 18,
@@ -226,8 +280,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Colors.theme,
   },
   callText: {
+    color: Colors.white,
+    fontWeight: '700',
+    fontSize: 14,
+    marginLeft: 10,
+  },
+  deleteButton: {
+    marginTop: 10,
+    borderRadius: 30,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.error,
+  },
+  deleteText: {
     color: Colors.white,
     fontWeight: '700',
     fontSize: 14,

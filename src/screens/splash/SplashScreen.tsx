@@ -30,7 +30,7 @@ const SplashScreen = () => {
 
       <ActivityIndicator
         size="large"
-        color={Colors.white}
+        color={Colors.theme}
         style={styles.loader}
       />
     </View>
@@ -42,7 +42,7 @@ export default SplashScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.theme,
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     height: 200,
   },
   appName: {
-    color: Colors.white,
+    color: Colors.theme,
     fontSize: 48,
     fontWeight: '900',
     marginTop: 24,

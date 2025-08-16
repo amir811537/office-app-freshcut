@@ -42,3 +42,17 @@ export const updateReport = async (
 
   return res?.data!;
 };
+// DELETE report by ID
+export const deleteReport = async (
+  id: string,
+): Promise<{
+  message: string;
+  deletedCount: number;
+}> => {
+  const res = await axiosClient.delete<{
+    message: string;
+    deletedCount: number;
+  }>(`${endpoints.reports}/${id}`);
+
+  return res?.data!;
+};
