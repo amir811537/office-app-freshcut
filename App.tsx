@@ -5,6 +5,7 @@ import RootNavigator from './src/navigations/RootNavigator';
 import FlashMessage from 'react-native-flash-message';
 
 const App = () => {
+  
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>

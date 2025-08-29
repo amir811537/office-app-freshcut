@@ -4,17 +4,19 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useForm } from 'react-hook-form';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
+import { showMessage } from 'react-native-flash-message';
 import { Colors } from '../../constants/colors';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
-import { goBack, navigate } from '../../utils/navigationRef';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
+import { goBack, navigate } from '../../utils/navigationRef';
+import { signupUser } from '../../services/loginService';
 
 type SignUpForm = {
   fullName: string;
@@ -27,7 +29,12 @@ type SignUpForm = {
 };
 
 const SignUpScreen: React.FC = () => {
-  const { control, handleSubmit, watch, formState: { errors } } = useForm<SignUpForm>({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<SignUpForm>({
     defaultValues: {
       fullName: '',
       userName: '',
@@ -41,13 +48,51 @@ const SignUpScreen: React.FC = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const onSubmit = (data: SignUpForm) => {
-    console.log('SignUp Data:', data);
-    // 🔥 API later
-  };
-
+  const [loading, setLoading] = useState(false);
   const password = watch('password');
+
+const onSubmit = async (data: SignUpForm) => {
+  setLoading(true); // start loader
+  try {
+    const payload = {
+      fullName: data.fullName,
+      userName: data.userName,
+      email: data.email,
+      phone: data.phone,
+      employeeCode: data.employeeCode,
+      password: data.password,
+    };
+
+    const res = await signupUser(payload);
+    console.log('response from signup:', res);
+
+    if (res.statusCode === 201) {
+      showMessage({
+        message: res.message || 'রেজিস্ট্রেশন সফল!',
+        description: 'আপনি এখন লগইন করতে পারেন।',
+        type: 'success',
+        duration: 3000,
+        onHide: () => navigate('LoginScreen'), // navigate after toast disappears
+      });
+    } else {
+      showMessage({
+        message: res?.message || 'রেজিস্ট্রেশন ব্যর্থ',
+        description: 'কিছু ভুল হয়েছে।',
+        type: 'danger',
+        duration: 4000,
+      });
+    }
+  } catch (error: any) {
+    showMessage({
+      message: 'রেজিস্ট্রেশন ব্যর্থ',
+      description: error?.message || 'কিছু ভুল হয়েছে।',
+      type: 'danger',
+      duration: 4000,
+    });
+  } finally {
+    setLoading(false); // stop loader
+  }
+};
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
@@ -58,12 +103,11 @@ const SignUpScreen: React.FC = () => {
       />
 
       <KeyboardAwareScrollView
-        style={{ flex: 1, backgroundColor: Colors.background }}
+        style={{ flex: 1 }}
         contentContainerStyle={styles.container}
         enableOnAndroid
         extraScrollHeight={80}
       >
-     
         {/* Full Name */}
         <CustomInput
           label="পূর্ণ নাম"
@@ -157,7 +201,7 @@ const SignUpScreen: React.FC = () => {
           secureTextEntry={!showConfirmPassword}
           rules={{
             required: 'পাসওয়ার্ড নিশ্চিতকরণ আবশ্যক',
-            validate: (value) => value === password || 'পাসওয়ার্ড মিলছে না',
+            validate: value => value === password || 'পাসওয়ার্ড মিলছে না',
           }}
           error={errors.confirmPassword}
           rightIcon={
@@ -172,9 +216,11 @@ const SignUpScreen: React.FC = () => {
 
         {/* Sign Up Button */}
         <CustomButton
-          title="রেজিস্টার করুন"
+          title={'রেজিস্টার করুন'}
           onPress={handleSubmit(onSubmit)}
           style={styles.signupButton}
+          disabled={loading}
+          loading={loading}
         />
 
         {/* Already have account */}
@@ -198,21 +244,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     backgroundColor: Colors.background,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.lightText,
-    marginTop: 4,
-    marginBottom: 20,
   },
   signupButton: {
     borderRadius: 12,

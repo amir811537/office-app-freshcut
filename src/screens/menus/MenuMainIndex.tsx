@@ -36,6 +36,7 @@ const MenuMainIndex = () => {
         icon: 'info',
         duration: 2000,
         floating: true,
+        
       });
     }
   };

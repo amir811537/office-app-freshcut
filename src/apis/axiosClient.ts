@@ -6,7 +6,7 @@ import axios, {
 
 // Create Axios instance
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: 'https://officeappsserverdie-topaz.vercel.app', // Replace with backend baseURL
+  baseURL: 'https://fresh-cut-backend.vercel.app', // Replace with backend baseURL
   headers: {
     'Content-Type': 'application/json',
   },
