@@ -1,213 +1,137 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
   View,
-  Linking,
   FlatList,
-  ListRenderItem,
   TouchableOpacity,
-  Alert,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
 import { Colors } from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
-import CustomCard from '../../components/CustomCard';
 import dayjs from 'dayjs';
-import { navigate, goBack } from '../../utils/navigationRef';
-import CustomButton from '../../components/CustomButton';
-import { getReports, deleteReport } from '../../services/reportService';
-import { CustomerReportTs } from '../../types/reportTypes';
-import { toBanglaNumber } from '../../utils/numberUtils';
-import CustomLoader from '../../components/CustomLoader';
-import { useIsFocused } from '@react-navigation/native';
-import { showMessage } from 'react-native-flash-message';
+import CustomDatePicker from '../../components/CustomDatePicker';
+import { useForm, Control } from 'react-hook-form';
+import { goBack, navigate } from '../../utils/navigationRef';
+
+const { width } = Dimensions.get('window');
 
 const BikroyReportMainIndex = () => {
-  const [landingData, setLandingData] = useState<CustomerReportTs[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const isFocused = useIsFocused();
+  const { control, watch } = useForm({
+    defaultValues: {
+      fromDate: dayjs().startOf('month').toDate(),
+      toDate: dayjs().endOf('month').toDate(),
+    },
+  });
 
-  const fetchReports = async () => {
-    setLoading(true);
-    try {
-      const response = await getReports();
-      setLandingData(response);
-    } catch (error) {
-      console.log('error fetching reports', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fromDate = watch('fromDate');
+  const toDate = watch('toDate');
 
-  useEffect(() => {
-    fetchReports();
-  }, [isFocused]);
-
-  // Calculate total sale
-  const totalSale = landingData.reduce(
-    (sum, item) => sum + Number(item.todaySell),
-    0,
-  );
-
-  const onPressFab = () => {
-    navigate('BikroyReportCreate');
-  };
-
-  const onBackPress = () => {
-    goBack();
-  };
-
-  const callNumber = (phone: string) => {
-    Linking.openURL(`tel:${phone}`);
-  };
-
-const handleDelete = (id: string) => {
-  Alert.alert('Confirm Delete', 'Are you sure you want to delete this report?', [
-    { text: 'Cancel', style: 'cancel' },
+  const [recentSales, setRecentSales] = useState([
     {
-      text: 'Delete',
-      style: 'destructive',
-      onPress: async () => {
-        try {
-          setLoading(true);
-          await deleteReport(id);
-
-          showMessage({
-            message: 'রিপোর্ট সফলভাবে ডিলিট হয়েছে 🗑️',
-            type: 'success',
-            icon: 'success',
-            duration: 2000,
-            floating: true,
-          });
-
-          await fetchReports(); // refresh after deletion
-        } catch (err:any) {
-          console.log('Delete error', err.message);
-          showMessage({
-            message:err?.message|| 'ডিলিট করার সময় একটি সমস্যা হয়েছে ❌',
-            type: 'danger',
-            icon: 'danger',
-            duration: 2500,
-            floating: true,
-          });
-        } finally {
-          setLoading(false);
-        }
-      },
+      _id: '1',
+      customer: { name: 'গ্রাহক A' },
+      employee: { fullName: 'কর্মকর্তা X' },
+      productName: 'চিকেন ৫ কেজি',
+      quantity: 5,
+      totalAmount: 5000,
+      status: 'paid',
+      date: new Date(),
+    },
+    {
+      _id: '2',
+      customer: { name: 'গ্রাহক B' },
+      employee: { fullName: 'কর্মকর্তা Y' },
+      productName: 'ডিম ৩০ পিস',
+      quantity: 30,
+      totalAmount: 3000,
+      status: 'partial',
+      date: new Date(),
     },
   ]);
-};
 
+  const onViewPress = () => {
+    console.log('View data from', fromDate, 'to', toDate);
+  };
 
-  const renderItem: ListRenderItem<CustomerReportTs> = ({ item }) => {
-    const boilerCount = item.boilerQtypes || '0'; // number of boilers
-    const qty = Number(item.boilerQtykg) || 0; // total kg
-    const rate = Number(item.boilerRate) || 0; // rate per kg
-    const totalSell = Number(item.todaySell) || 0;
-
-    const calculationText = `বয়লার ${boilerCount}পিছ (${toBanglaNumber(
-      qty,
-    )} kg × ${toBanglaNumber(rate)}) = ${toBanglaNumber(totalSell)} টাকা`;
-
-    const onEditPress = () => {
-      navigate('BikroyReportCreate', { reportData: item });
-    };
-
-    return (
-      <CustomCard style={styles.card}>
-        {/* Top Row with Name + Edit */}
-        <View style={styles.headerRow}>
-          <Text style={styles.name}>{item.name}</Text>
-          <TouchableOpacity onPress={onEditPress}>
-            <Icon name="create-outline" size={22} color={Colors.theme} />
+  const renderSaleItem = ({ item }: any) => (
+    <View style={styles.saleCard}>
+      <View style={styles.saleHeader}>
+        <Text style={styles.saleCustomer}>{item.customer.name}</Text>
+        <View style={styles.statusRow}>
+          <TouchableOpacity
+            style={[
+              styles.statusButton,
+              item.status === 'paid'
+                ? { backgroundColor: Colors.greenFresh }
+                : item.status === 'partial'
+                ? { backgroundColor: Colors.orangeAccent }
+                : { backgroundColor: Colors.error },
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {item.status === 'paid'
+                ? 'পরিশোধিত'
+                : item.status === 'partial'
+                ? 'আংশিক'
+                : 'বাকি'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton}>
+            <Icon name="create-outline" size={20} color={Colors.theme} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton}>
+            <Icon name="trash-outline" size={20} color={Colors.error} />
           </TouchableOpacity>
         </View>
-
-        <Text style={styles.date}>{dayjs(item.date).format('DD/MM/YYYY')}</Text>
-
-        <View style={styles.divider} />
-
-        <View style={styles.row}>
-          <Text style={styles.label}>ঠিকানা</Text>
-          <Text style={styles.value}>{item.address}</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>আজকের বিক্রি</Text>
-          <Text style={styles.value}>{calculationText}</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>আজকের জমা</Text>
-          <Text style={styles.value}>{toBanglaNumber(item.payment)} টাকা</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>ইজা/বাকি আছে</Text>
-          <Text style={styles.value}>{toBanglaNumber(item.due)} টাকা</Text>
-        </View>
-
-        {/* Action Buttons */}
-        <CustomButton
-          title={`কল করুন: ${toBanglaNumber(item.phone)}`}
-          onPress={() => callNumber(item.phone)}
-          style={styles.callButton}
-          textStyle={styles.callText}
-          type="primary"
-        >
-          <Icon name="call" size={18} color={Colors.white} />
-        </CustomButton>
-
-        <CustomButton
-          title="ডিলিট করুন"
-          onPress={() => handleDelete(item._id)}
-          style={styles.deleteButton}
-          textStyle={styles.deleteText}
-          type="secondary"
-        >
-          <Icon name="trash-outline" size={18} color={Colors.white} />
-        </CustomButton>
-      </CustomCard>
-    );
-  };
+      </View>
+      <Text style={styles.saleProduct}>
+        {item.productName} × {item.quantity}
+      </Text>
+      <Text style={styles.saleAmount}>{item.totalAmount.toLocaleString()} টাকা</Text>
+      <Text style={styles.saleDate}>{dayjs(item.date).format('DD/MM/YYYY')}</Text>
+    </View>
+  );
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
-      <CustomHeader
-        title="বিক্রয় রিপোর্ট"
-        leftIconName="arrow-back"
-        onLeftPress={onBackPress}
-      />
-
-      {loading ? (
-        <CustomLoader loading={loading} />
-      ) : (
-        <>
-          <View style={styles.totalSaleContainer}>
-            <Text style={styles.totalSaleText}>
-              মোট বিক্রি: {toBanglaNumber(totalSale)}
-            </Text>
-          </View>
-
-          <FlatList
-            data={landingData}
-            keyExtractor={item => item._id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
+      <CustomHeader title="বিক্রয় রিপোর্ট"  leftIconName="arrow-back"
+              onLeftPress={() => goBack()} />
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Date Filters */}
+        <View style={styles.filtersContainer}>
+          <CustomDatePicker
+            name="fromDate"
+            control={control as unknown as Control<any>}
+            label="শুরুর তারিখ"
+            containerStyle={{ flex: 1, marginRight: 8 }}
           />
-        </>
-      )}
+          <CustomDatePicker
+            name="toDate"
+            control={control as unknown as Control<any>}
+            label="শেষ তারিখ"
+            containerStyle={{ flex: 1, marginRight: 8 }}
+          />
+          <TouchableOpacity style={styles.viewButton} onPress={onViewPress}>
+            <Text style={styles.viewButtonText}>দেখুন</Text>
+          </TouchableOpacity>
+        </View>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={onPressFab}
-        activeOpacity={0.7}
-      >
-        <Icon name="add" size={28} color={Colors.white} />
-      </TouchableOpacity>
+        {/* Recent Sales List */}
+        <Text style={styles.sectionTitle}>সাম্প্রতিক বিক্রি</Text>
+        <FlatList
+          data={recentSales}
+          keyExtractor={(item) => item._id}
+          renderItem={renderSaleItem}
+          contentContainerStyle={styles.salesList}
+        />
+      </ScrollView>
+        <TouchableOpacity onPress={()=>navigate('BikroyReportCreate')} style={styles.fab} activeOpacity={0.7}>
+      <Icon name="add" size={28} color={Colors.white} />
+    </TouchableOpacity>
     </WrapperContainer>
   );
 };
@@ -215,105 +139,115 @@ const handleDelete = (id: string) => {
 export default BikroyReportMainIndex;
 
 const styles = StyleSheet.create({
-  totalSaleContainer: {
-    padding: 16,
-    backgroundColor: Colors.card,
-    marginHorizontal: 16,
-    marginVertical: 10,
-    borderRadius: 12,
-  },
-  totalSaleText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.theme,
-  },
-  listContent: {
+  container: {
+    paddingBottom: 120,
     paddingHorizontal: 16,
+  },
+  filtersContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  
+  },
+  viewButton: {
+    height: 44,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.theme,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginTop:23
+  },
+  viewButtonText: {
+    color: Colors.white,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.black,
+    marginBottom: 8,
+  },
+  salesList: {
     paddingBottom: 100,
   },
-  card: {
+  saleCard: {
     backgroundColor: Colors.card,
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
-  headerRow: {
+  saleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 6,
+    alignItems: 'center',
   },
-  name: {
-    fontSize: 18,
+  saleCustomer: {
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.black,
-    marginBottom: 6,
   },
-  date: {
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  statusText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  iconButton: {
+    marginLeft: 4,
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: Colors.white,
+    elevation: 2,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  saleProduct: {
     fontSize: 14,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  saleAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.black,
+    marginBottom: 2,
+  },
+  saleDate: {
+    fontSize: 12,
     color: Colors.lightText,
   },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginVertical: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
-  label: {
-    fontWeight: '700',
-    color: Colors.theme,
-    width: 120,
-    fontSize: 14,
-  },
-  value: {
-    flex: 1,
-    color: Colors.black,
-    fontSize: 14,
-  },
-  callButton: {
-    marginTop: 10,
-    borderRadius: 30,
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.theme,
-  },
-  callText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 14,
-    marginLeft: 10,
-  },
-  deleteButton: {
-    marginTop: 10,
-    borderRadius: 30,
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.error,
-  },
-  deleteText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 14,
-    marginLeft: 10,
-  },
-  fab: {
+   fab: {
     position: 'absolute',
-    bottom: 80,
+    bottom:80,
     right: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
     backgroundColor: Colors.theme,
+    elevation: 6,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });

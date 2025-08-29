@@ -7,6 +7,7 @@ import {
   TextInputProps,
   ViewStyle,
   TextStyle,
+  TouchableOpacity,
 } from 'react-native';
 import { Controller, Control, FieldError } from 'react-hook-form';
 import { Colors } from '../constants/colors';
@@ -21,7 +22,13 @@ interface CustomInputProps extends TextInputProps {
   labelStyle?: TextStyle;
   errorStyle?: TextStyle;
   error?: FieldError | undefined;
-  disabled?: boolean; // ✅ new prop
+  disabled?: boolean;
+
+  // ✅ New props
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  onLeftIconPress?: () => void;
+  onRightIconPress?: () => void;
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({
@@ -35,33 +42,59 @@ const CustomInput: React.FC<CustomInputProps> = ({
   errorStyle,
   error,
   disabled = false,
+  leftIcon,
+  rightIcon,
+  onLeftIconPress,
+  onRightIconPress,
   ...inputProps
 }) => {
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
 
-      <Controller
-        control={control}
-        name={name}
-        rules={rules}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={[
-              styles.input,
-              inputStyle,
-              error ? styles.inputError : null,
-              disabled ? styles.inputDisabled : null, // ✅ apply disabled style
-            ]}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            editable={!disabled} // ✅ make input non-editable
-            placeholderTextColor={disabled ? Colors.lightText : undefined} // optional
-            {...inputProps}
-          />
+      <View style={styles.inputWrapper}>
+        {leftIcon && (
+          <TouchableOpacity
+            onPress={onLeftIconPress}
+            disabled={!onLeftIconPress}
+            style={styles.iconContainer}
+          >
+            {leftIcon}
+          </TouchableOpacity>
         )}
-      />
+
+        <Controller
+          control={control}
+          name={name}
+          rules={rules}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={[
+                styles.input,
+                inputStyle,
+                error ? styles.inputError : null,
+                disabled ? styles.inputDisabled : null,
+              ]}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              editable={!disabled}
+              placeholderTextColor={disabled ? Colors.lightText : undefined}
+              {...inputProps}
+            />
+          )}
+        />
+
+        {rightIcon && (
+          <TouchableOpacity
+            onPress={onRightIconPress}
+            disabled={!onRightIconPress}
+            style={styles.iconContainer}
+          >
+            {rightIcon}
+          </TouchableOpacity>
+        )}
+      </View>
 
       {error && (
         <Text style={[styles.errorText, errorStyle]}>
@@ -76,7 +109,7 @@ export default CustomInput;
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 8,
+    marginVertical: 5,
   },
   label: {
     fontSize: 14,
@@ -84,22 +117,32 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     color: Colors.text,
   },
-  input: {
-    height: 44,
-    paddingHorizontal: 12,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 8,
+    backgroundColor: Colors.white,
+  },
+  input: {
+    flex: 1,
+    height: 44,
+    paddingHorizontal: 12,
     fontSize: 16,
     color: Colors.black,
-    backgroundColor: Colors.white,
   },
   inputError: {
     borderColor: Colors.error,
   },
   inputDisabled: {
-    backgroundColor: Colors.disabled, // updated color
-    color: Colors.inactive_tint, // updated text color
+    backgroundColor: Colors.disabled,
+    color: Colors.inactive_tint,
+  },
+  iconContainer: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     marginTop: 4,

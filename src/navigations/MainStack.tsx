@@ -1,4 +1,3 @@
-import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { mergedStacks } from './ScreenCollections';
@@ -25,5 +24,3 @@ const MainStack = () => {
 };
 
 export default MainStack;
-
-const styles = StyleSheet.create({});

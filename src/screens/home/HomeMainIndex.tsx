@@ -1,77 +1,110 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
 import { Colors } from '../../constants/colors';
+import CustomCard from '../../components/CustomCard';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { showMessage } from 'react-native-flash-message';
-import { navigate } from '../../utils/navigationRef';
-
-const menuItems = [
-  { id: '1', title: 'বিক্রয় রিপোর্ট', icon: 'bar-chart' },
-  { id: '2', title: 'বাকি রিপোর্ট', icon: 'document-text' },
-  { id: '3', title: 'অর্ডার লিস্ট', icon: 'list' },
-  { id: '4', title: 'কাস্টমার', icon: 'people' },
-  { id: '5', title: 'প্রোডাক্ট', icon: 'cube' },
-];
-
-const { width } = Dimensions.get('window');
-const ITEM_MARGIN = 8;
-const ITEM_WIDTH = (width - 32 - ITEM_MARGIN * 4) / 3; // 32 is total horizontal padding (16*2)
 
 const HomeMainIndex = () => {
-  const onMenuPress = (item: (typeof menuItems)[0]) => {
-    if (item.title === 'বিক্রয় রিপোর্ট') {
-      navigate('BikroyReport');
-    } else {
-      showMessage({
-        message: 'শীঘ্রই আসছে',
-        type: 'info',
-        icon: 'info',
-        duration: 2000,
-        floating: true,
-      });
-    }
+  const overview = {
+    totalSales: 120,
+    totalRevenue: 55000,
+    totalCollected: 48000,
+    totalDue: 7000,
   };
+
+  const recentSales = [
+    { productName: 'প্রোডাক্ট A', quantity: 2, totalAmount: 2000, status: 'Paid' },
+    { productName: 'প্রোডাক্ট B', quantity: 1, totalAmount: 1500, status: 'Due' },
+    { productName: 'প্রোডাক্ট C', quantity: 3, totalAmount: 4500, status: 'Paid' },
+  ];
+
+  const topProducts = [
+    { productName: 'প্রোডাক্ট A', totalQuantity: 20, totalAmount: 20000 },
+    { productName: 'প্রোডাক্ট C', totalQuantity: 15, totalAmount: 15000 },
+    { productName: 'প্রোডাক্ট B', totalQuantity: 10, totalAmount: 10000 },
+  ];
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
-      <CustomHeader title="হোম" />
+      <CustomHeader title="ড্যাশবোর্ড" />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.menuGrid}>
-          {menuItems.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.menuItem}
-              onPress={() => onMenuPress(item)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.iconContainer}>
-                <Icon name={item.icon} size={32} color={Colors.theme} />
-              </View>
-              <Text style={styles.menuText}>{item.title}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* Overview Cards */}
+        <View style={styles.overviewContainer}>
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.orangeAccent }]}>
+            <Icon name="cart-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট বিক্রয়</Text>
+            <Text style={styles.overviewValue}>{overview.totalSales}</Text>
+          </CustomCard>
 
-          {/* Add empty views to maintain grid structure if items count not divisible by 3 */}
-          {menuItems.length % 3 !== 0 &&
-            Array.from({ length: 3 - (menuItems.length % 3) }).map(
-              (_, index) => (
-                <View key={`empty-${index}`} style={styles.emptyItem} />
-              ),
-            )}
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.theme }]}>
+            <Icon name="cash-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট রাজস্ব</Text>
+            <Text style={styles.overviewValue}>৳ {overview.totalRevenue}</Text>
+          </CustomCard>
+
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.greenFresh }]}>
+            <Icon name="wallet-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট আদায়</Text>
+            <Text style={styles.overviewValue}>৳ {overview.totalCollected}</Text>
+          </CustomCard>
+
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.fbColor }]}>
+            <Icon name="alert-circle-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট বাকি</Text>
+            <Text style={styles.overviewValue}>৳ {overview.totalDue}</Text>
+          </CustomCard>
         </View>
+
+        {/* Recent Sales */}
+        <Text style={styles.sectionTitle}>সাম্প্রতিক বিক্রয়</Text>
+        {recentSales.map((sale, index) => (
+          <CustomCard key={index} style={styles.listCard}>
+            <View style={styles.listRow}>
+              <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+                <Icon name="cube-outline" size={18} color={Colors.theme} style={{ marginRight: 8 }} />
+                <Text style={styles.listText}>{sale.productName}</Text>
+              </View>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={styles.listText}>{sale.quantity} pcs</Text>
+              </View>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={styles.listText}>৳ {sale.totalAmount}</Text>
+              </View>
+              <View style={[
+                styles.statusBadge,
+                { backgroundColor: sale.status === 'Paid' ? Colors.greenFresh : Colors.orangeAccent }
+              ]}>
+                <Text style={styles.statusText}>{sale.status === 'Paid' ? 'পরিশোধিত' : 'বাকি'}</Text>
+              </View>
+            </View>
+          </CustomCard>
+        ))}
+
+        {/* Top Products */}
+        <Text style={styles.sectionTitle}>শীর্ষ প্রোডাক্ট</Text>
+        {topProducts.map((prod, index) => (
+          <CustomCard key={index} style={styles.listCard}>
+            <View style={styles.listRow}>
+              <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+                <Icon name="pricetag-outline" size={18} color={Colors.orangeAccent} style={{ marginRight: 8 }} />
+                <Text style={styles.listText}>{prod.productName}</Text>
+              </View>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={styles.listText}>{prod.totalQuantity} pcs</Text>
+              </View>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={styles.listText}>৳ {prod.totalAmount}</Text>
+              </View>
+            </View>
+          </CustomCard>
+        ))}
+
       </ScrollView>
     </WrapperContainer>
   );
@@ -80,42 +113,79 @@ const HomeMainIndex = () => {
 export default HomeMainIndex;
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    padding: 16,
+  container: {
+    paddingHorizontal: 16,
+    paddingBottom: 30,
   },
-  menuGrid: {
+  overviewContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: 20,
   },
-  menuItem: {
-    width: ITEM_WIDTH,
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    marginBottom: ITEM_MARGIN,
+  overviewCard: {
+    width: '48%',
     alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 20,
-    paddingHorizontal: 10,
+    borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 5 },
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  icon: {
+    marginBottom: 12,
+  },
+  overviewTitle: {
+    fontSize: 14,
+    color: Colors.white,
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  overviewValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 10,
+    marginTop: 15,
+  },
+  listCard: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 10,
+    backgroundColor: Colors.surfaceLight,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
     elevation: 3,
   },
-  emptyItem: {
-    width: ITEM_WIDTH,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-    opacity: 0, // completely transparent
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  iconContainer: {
-    marginBottom: 8,
-  },
-  menuText: {
+  listText: {
     fontSize: 14,
+    color: Colors.text,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusText: {
+    color: Colors.white,
+    fontSize: 12,
     fontWeight: '600',
-    color: Colors.black,
-    textAlign: 'center',
   },
 });

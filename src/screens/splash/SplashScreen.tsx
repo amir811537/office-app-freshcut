@@ -14,9 +14,8 @@ import { IMAGES } from '../../constants/images';
 const SplashScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
-      resetAndNavigate('BottomTab');
+      resetAndNavigate('LoginScreen');
     }, 1500);
-
     return () => clearTimeout(timer);
   }, []);
 

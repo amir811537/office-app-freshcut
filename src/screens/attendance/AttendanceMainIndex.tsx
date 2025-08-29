@@ -10,7 +10,7 @@ const AttendanceMainIndex = ({ navigation }: any) => {
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader
         title="অ্যাটেন্ডেন্স"
-        onPressLeft={() => navigation.goBack()}
+  
       />
 
       <View style={styles.container}>

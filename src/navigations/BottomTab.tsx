@@ -6,23 +6,24 @@ import {
 import { RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-import HomeMainIndex from '../screens/home/HomeMainIndex';
+import MenuMainIndex from '../screens/menus/MenuMainIndex';
 import AttendanceMainIndex from '../screens/attendance/AttendanceMainIndex';
-import SettingsMainIndex from '../screens/settings/SettingsMainIndex';
+import SettingsMainIndex from '../screens/settings/SettingsMainIndex'; // Will be used as Profile
 import { Colors } from '../constants/colors';
+import HomeMainIndex from '../screens/home/HomeMainIndex';
 
 type TabParamList = {
-  Home: undefined;
+  Dashboard: undefined;
+  Menu: undefined;
   Attendance: undefined;
-  Settings: undefined;
+  Profile: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 type ScreenOptionsProps = {
   route: RouteProp<TabParamList, keyof TabParamList>;
-  navigation: any; // you can type this properly if you want
-  // theme?: Theme; // if you want to use theme
+  navigation: any;
 };
 
 const TabBarIcon: React.FC<{
@@ -33,17 +34,20 @@ const TabBarIcon: React.FC<{
   let iconName: string;
 
   switch (routeName) {
-    case 'Home':
-      iconName = 'home';
+    case 'Dashboard':
+      iconName = 'speedometer-outline';
+      break;
+    case 'Menu':
+      iconName = 'grid-outline';
       break;
     case 'Attendance':
-      iconName = 'checkmark-done';
+      iconName = 'checkmark-done-outline';
       break;
-    case 'Settings':
-      iconName = 'settings';
+    case 'Profile':
+      iconName = 'person-circle-outline'; // New profile icon
       break;
     default:
-      iconName = 'help-circle';
+      iconName = 'help-circle-outline';
   }
 
   return <Icon name={iconName} size={size} color={color} />;
@@ -80,9 +84,26 @@ const screenOptions = ({
 const BottomTab: React.FC = () => {
   return (
     <Tab.Navigator screenOptions={screenOptions}>
-      <Tab.Screen name="Home" component={HomeMainIndex} />
-      <Tab.Screen name="Attendance" component={AttendanceMainIndex} />
-      <Tab.Screen name="Settings" component={SettingsMainIndex} />
+      <Tab.Screen
+        name="Dashboard"
+        component={HomeMainIndex}
+        options={{ tabBarLabel: 'ড্যাশবোর্ড' }}
+      />
+      <Tab.Screen
+        name="Menu"
+        component={MenuMainIndex}
+        options={{ tabBarLabel: 'মেনু' }}
+      />
+      <Tab.Screen
+        name="Attendance"
+        component={AttendanceMainIndex}
+        options={{ tabBarLabel: 'হাজিরা' }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={SettingsMainIndex} // Component remains same
+        options={{ tabBarLabel: 'প্রোফাইল' }}
+      />
     </Tab.Navigator>
   );
 };
