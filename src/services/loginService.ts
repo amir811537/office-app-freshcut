@@ -16,3 +16,29 @@ export const signupUser = async (
     return error.response.data;
   }
 };
+
+export const loginUser=async(payload:any,setIsLoading:any)=>{
+  setIsLoading(true);
+  try {
+    const res=await axiosClient.post(endpoints.login,payload);
+    setIsLoading(false);
+    return res.data;
+  } catch (error:any) {
+    setIsLoading(false);
+    return error.response.data;
+  }
+}
+
+export const logoutUser = async (setIsLoading:any): Promise<ApiResponse<null>> => {
+  setIsLoading(true);
+  try {
+    const res = await axiosClient.post<ApiResponse<null>>(endpoints.logout);
+    setIsLoading(false);
+    return res.data;
+  } catch (error: any) {
+    setIsLoading(false);
+    return error.response.data;
+  }
+};
+
+

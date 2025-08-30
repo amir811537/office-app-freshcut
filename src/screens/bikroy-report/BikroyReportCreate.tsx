@@ -1,148 +1,114 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
-import { useForm } from 'react-hook-form';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import {
+  StyleSheet,
+  View,
+  Platform,
+} from 'react-native';
+import { useForm, useWatch } from 'react-hook-form';
 import { showMessage } from 'react-native-flash-message';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import CustomButton from '../../components/CustomButton';
-import CustomDatePicker from '../../components/CustomDatePicker';
 import CustomHeader from '../../components/CustomHeader';
 import CustomInput from '../../components/CustomInput';
+import CustomDropdown from '../../components/CustomDropdown';
+import CustomDatePicker from '../../components/CustomDatePicker';
 import WrapperContainer from '../../components/WrapperContainer';
 import { Colors } from '../../constants/colors';
 import { goBack } from '../../utils/navigationRef';
-import { createReport, updateReport } from '../../services/reportService';
-import { CreateReportPayload, CustomerReportTs } from '../../types/reportTypes';
+import { createSale } from '../../services/salesApi';
 
-type FormData = {
-  naam: string;
-  tarikh: Date;
-  thikana: string;
-  phone: string;
-  boilerSonkha: string;
-  kg: string;
-  rate: string;
-  ajekrBikri: string;
-  ajkerJoma: string;
-  bakiIzaAche: string;
+type SaleForm = {
+  customerId: string;
+  employeeId: string;
+  date: Date;
+  productName: string;
+  uom: string;
+  quantity: string;
+  price: string;
+  paidAmount: string;
+  totalPrice: string;
+  dueAmount: string;
+  notes?: string;
 };
 
-interface Props {
-  route?: {
-    params?: {
-      reportData?: CustomerReportTs;
-    };
-  };
-}
-
-const CreateBikroyReport: React.FC<Props> = ({ route }) => {
-  const reportData = route?.params?.reportData; // undefined if creating new
-  const isEditMode = !!reportData?._id;
-
+const CreateSaleScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const {
     control,
     handleSubmit,
-    reset,
+    setValue,
     formState: { errors },
-  } = useForm<FormData>({
+  } = useForm<SaleForm>({
     defaultValues: {
-      naam: '',
-      tarikh: new Date(),
-      thikana: '',
-      phone: '',
-      boilerSonkha: '',
-      kg: '',
-      rate: '',
-      ajekrBikri: '',
-      ajkerJoma: '',
-      bakiIzaAche: '',
+      customerId: '',
+      employeeId: '',
+      date: new Date(),
+      productName: '',
+      uom: '',
+      quantity: '',
+      price: '',
+      paidAmount: '',
+      totalPrice: '',
+      dueAmount: '',
+      notes: '',
     },
   });
 
-  // Prefill fields in edit mode
-  useEffect(() => {
-    if (isEditMode) {
-      reset({
-        naam: reportData!.name,
-        tarikh: new Date(reportData!.date),
-        thikana: reportData!.address,
-        phone: reportData!.phone,
-        boilerSonkha: reportData!.boilerQtypes,
-        kg: reportData!.boilerQtykg,
-        rate: reportData!.boilerRate,
-        ajekrBikri: reportData!.todaySell.toString(),
-        ajkerJoma: reportData!.payment.toString(),
-        bakiIzaAche: reportData!.due.toString(),
-      });
-    }
-  }, [isEditMode, reportData, reset]);
+  // 🔹 Watch values for calculation
+  const price = useWatch({ control, name: 'price' });
+  const quantity = useWatch({ control, name: 'quantity' });
+  const paidAmount = useWatch({ control, name: 'paidAmount' });
 
-  const onSubmit = async (data: FormData) => {
+  // 🔹 Auto-calculate total & due
+  useEffect(() => {
+    const total = (Number(price) || 0) * (Number(quantity) || 0);
+    const due = total - (Number(paidAmount) || 0);
+    setValue('totalPrice', total.toString());
+    setValue('dueAmount', due.toString());
+  }, [price, quantity, paidAmount, setValue]);
+
+  const onSubmit = async (data: SaleForm) => {
     try {
       setLoading(true);
 
-      if (isEditMode) {
-        const payload = {
-          payment: Number(data.ajkerJoma),
-          due: Number(data.bakiIzaAche),
-          boilerRate: data.rate,
-        };
+      const payload = {
+        customerId: data.customerId,
+        employeeId: data.employeeId,
+        date: data.date,
+        productName: data.productName,
+        uom: data.uom,
+        quantity: Number(data.quantity),
+        price: Number(data.price),
+        paidAmount: Number(data.paidAmount) || 0,
+        notes: data.notes,
+      };
 
-        const res = await updateReport(reportData!._id, payload);
+      const res = await createSale(payload);
 
-        if (res?.message === 'User updated successfully') {
-          showMessage({
-            message: 'রিপোর্ট সফলভাবে আপডেট করা হয়েছে ✅',
-            type: 'success',
-            icon: 'success',
-            duration: 2000,
-            floating: true,
-            onHide: () => goBack(),
-          });
-        } else {
-          showMessage({
-            message: 'আপডেট করা যায়নি ❌',
-            type: 'danger',
-            icon: 'danger',
-            duration: 2000,
-            floating: true,
-          });
-        }
-      } else {
-        const payload: CreateReportPayload = {
-          name: data.naam,
-          date: data.tarikh.toISOString().split('T')[0],
-          address: data.thikana,
-          phone: data.phone,
-          boilerRate: data.rate,
-          todaySell: Number(data.ajekrBikri),
-          payment: Number(data.ajkerJoma),
-          due: Number(data.bakiIzaAche),
-          boilerQtykg: data.kg,
-          boilerQtypes: data.boilerSonkha,
-        };
-
-        await createReport(payload);
-
+      if (res?.status === 201) {
         showMessage({
-          message: 'রিপোর্ট সফলভাবে সংরক্ষণ করা হয়েছে ✅',
+          message: 'বিক্রয় সফলভাবে সংরক্ষণ করা হয়েছে ✅',
           type: 'success',
           icon: 'success',
           duration: 2000,
           floating: true,
           onHide: () => goBack(),
         });
+      } else {
+        showMessage({
+          message: res?.message || 'বিক্রয় সংরক্ষণ ব্যর্থ ❌',
+          type: 'danger',
+          icon: 'danger',
+        });
       }
-    } catch (error) {
-      console.error('Error saving report:', error);
+    } catch (error: any) {
+      console.error('Error creating sale:', error);
       showMessage({
-        message: 'রিপোর্ট সংরক্ষণে সমস্যা হয়েছে ❌',
+        message: error?.message || 'বিক্রয় সংরক্ষণ ব্যর্থ ❌',
         type: 'danger',
         icon: 'danger',
-        duration: 2000,
-        floating: true,
       });
     } finally {
       setLoading(false);
@@ -152,11 +118,7 @@ const CreateBikroyReport: React.FC<Props> = ({ route }) => {
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader
-        title={
-          isEditMode
-            ? 'বিক্রয় রিপোর্ট সম্পাদনা করুন'
-            : 'বিক্রয় রিপোর্ট তৈরি করুন'
-        }
+        title="নতুন বিক্রয় তৈরি করুন"
         leftIconName="arrow-back"
         onLeftPress={() => goBack()}
       />
@@ -169,141 +131,138 @@ const CreateBikroyReport: React.FC<Props> = ({ route }) => {
         extraHeight={Platform.OS === 'ios' ? 150 : 200}
         extraScrollHeight={Platform.OS === 'ios' ? 120 : 150}
         enableAutomaticScroll
-        keyboardDismissMode="interactive"
-        keyboardOpeningTime={250}
-        resetScrollToCoords={{ x: 0, y: 0 }}
-        scrollEnabled
-        bounces={false}
         showsVerticalScrollIndicator={false}
       >
-        {/* Disabled fields in edit mode */}
-        <CustomInput
-          label="নাম"
+        {/* 🔹 Customer */}
+        <CustomDropdown
+          label="কাস্টমার"
+          name="customerId"
           control={control}
-          name="naam"
-          disabled={isEditMode}
-          rules={!isEditMode ? { required: 'নাম আবশ্যক' } : undefined}
-          error={errors.naam}
+          items={[
+            { label: 'কাস্টমার ১', value: 'cust1' },
+            { label: 'কাস্টমার ২', value: 'cust2' },
+          ]}
+          rules={{ required: 'কাস্টমার নির্বাচন করুন' }}
+          error={errors.customerId}
         />
+
+        {/* 🔹 Employee */}
+        <CustomDropdown
+          label="কর্মচারী"
+          name="employeeId"
+          control={control}
+          items={[
+            { label: 'এমপ্লয়ি ১', value: 'emp1' },
+            { label: 'এমপ্লয়ি ২', value: 'emp2' },
+          ]}
+          rules={{ required: 'কর্মচারী নির্বাচন করুন' }}
+          error={errors.employeeId}
+        />
+
+        {/* 🔹 Date */}
         <CustomDatePicker
           label="তারিখ"
+          name="date"
           control={control}
-          name="tarikh"
-          disabled={isEditMode}
-          rules={!isEditMode ? { required: 'তারিখ আবশ্যক' } : undefined}
-          error={errors.tarikh}
-          maximumDate={new Date()}
+          rules={{ required: 'তারিখ নির্বাচন করুন' }}
+          errorStyle={{ color: Colors.error }}
         />
+
+        {/* 🔹 Product Name (disabled) */}
         <CustomInput
-          label="ঠিকানা"
+          label="পণ্যের নাম"
           control={control}
-          name="thikana"
-          disabled={isEditMode}
-          rules={!isEditMode ? { required: 'ঠিকানা আবশ্যক' } : undefined}
-          error={errors.thikana}
+          name="productName"
+          disabled
+          error={errors.productName}
         />
+
+        {/* 🔹 UOM (disabled) */}
         <CustomInput
-          label="ফোন নম্বর"
+          label="একক (UOM)"
           control={control}
-          name="phone"
-          disabled={isEditMode}
-          rules={!isEditMode ? { required: 'ফোন নম্বর আবশ্যক' } : undefined}
-          error={errors.phone}
+          name="uom"
+          disabled
+          error={errors.uom}
         />
+
+        {/* 🔹 Price & Quantity */}
         <View style={styles.row}>
           <View style={styles.halfInput}>
             <CustomInput
-              label="বয়লার সংখ্যা"
+              label="দাম"
               control={control}
-              name="boilerSonkha"
-              disabled={isEditMode}
-              rules={
-                !isEditMode ? { required: 'বয়লার সংখ্যা আবশ্যক' } : undefined
-              }
-              error={errors.boilerSonkha}
+              name="price"
+              keyboardType="numeric"
+              rules={{ required: 'দাম আবশ্যক' }}
+              error={errors.price}
             />
           </View>
           <View style={styles.halfInput}>
             <CustomInput
-              label="কেজি"
+              label="পরিমাণ"
               control={control}
-              name="kg"
-              disabled={isEditMode}
-              rules={!isEditMode ? { required: 'কেজি আবশ্যক' } : undefined}
-              error={errors.kg}
+              name="quantity"
+              keyboardType="numeric"
+              rules={{ required: 'পরিমাণ আবশ্যক' }}
+              error={errors.quantity}
             />
           </View>
         </View>
 
-        {/* Always editable fields */}
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
-            <CustomInput
-              label="রেট"
-              control={control}
-              name="rate"
-              keyboardType="numeric"
-              rules={{ required: 'রেট আবশ্যক' }}
-              error={errors.rate}
-            />
-          </View>
-          <View style={styles.halfInput}>
-            <CustomInput
-              label="আজকের জমা"
-              control={control}
-              name="ajkerJoma"
-              keyboardType="numeric"
-              rules={{ required: 'আজকের জমা আবশ্যক' }}
-              error={errors.ajkerJoma}
-            />
-          </View>
-        </View>
+        {/* 🔹 Paid Amount */}
+        <CustomInput
+          label="প্রদত্ত টাকা"
+          control={control}
+          name="paidAmount"
+          keyboardType="numeric"
+          error={errors.paidAmount}
+        />
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
-            <CustomInput
-              label="আজকের বিক্রি"
-              control={control}
-              name="ajekrBikri"
-              keyboardType="numeric"
-              rules={
-                !isEditMode ? { required: 'আজকের বিক্রি আবশ্যক' } : undefined
-              }
-              error={errors.ajekrBikri}
-            />
-          </View>
-          <View style={styles.halfInput}>
-            <CustomInput
-              label="বাকি/ইজ্জা আছে"
-              control={control}
-              name="bakiIzaAche"
-              keyboardType="numeric"
-              rules={{ required: 'বাকি/ইজ্জা আবশ্যক' }}
-              error={errors.bakiIzaAche}
-            />
-          </View>
-        </View>
+        {/* 🔹 Total Price (disabled) */}
+        <CustomInput
+          label="মোট দাম"
+          control={control}
+          name="totalPrice"
+          disabled
+        />
+
+        {/* 🔹 Due Amount (disabled) */}
+        <CustomInput
+          label="বাকি টাকা"
+          control={control}
+          name="dueAmount"
+          disabled
+        />
+
+        {/* 🔹 Notes */}
+        <CustomInput
+          label="নোট"
+          control={control}
+          name="notes"
+          multiline
+          placeholder="অতিরিক্ত নোট লিখুন"
+        />
 
         <CustomButton
           loading={loading}
-          title={isEditMode ? 'আপডেট করুন' : 'সাবমিট'}
+          title="সাবমিট করুন"
           onPress={handleSubmit(onSubmit)}
           style={styles.submitButton}
         />
 
-        <View style={styles.bottomSpacer} />
+        <View style={{ height: 100 }} />
       </KeyboardAwareScrollView>
     </WrapperContainer>
   );
 };
 
-export default CreateBikroyReport;
+export default CreateSaleScreen;
 
 const styles = StyleSheet.create({
   scrollView: { flex: 1 },
-  contentContainer: { flexGrow: 1, paddingHorizontal: 16, paddingVertical: 10 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  contentContainer: { flexGrow: 1, padding: 16 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   halfInput: { flex: 1 },
   submitButton: { marginTop: 30, borderRadius: 10, paddingVertical: 16 },
-  bottomSpacer: { height: 100 },
 });

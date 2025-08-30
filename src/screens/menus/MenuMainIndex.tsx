@@ -26,20 +26,22 @@ const ITEM_WIDTH = (width - 32 - ITEM_MARGIN * 2) / 3; // compact 3-column layou
 const CIRCLE_SIZE = ITEM_WIDTH * 0.75; // smaller circle
 
 const MenuMainIndex = () => {
-  const onMenuPress = (item: (typeof menuItems)[0]) => {
-    if (item.title === 'বিক্রয়') {
-      navigate('BikroyReport');
-    } else {
-      showMessage({
-        message: 'শীঘ্রই আসছে',
-        type: 'info',
-        icon: 'info',
-        duration: 2000,
-        floating: true,
-        
-      });
-    }
-  };
+const onMenuPress = (item: (typeof menuItems)[0]) => {
+  if (item.title === 'বিক্রয়') {
+    navigate('BikroyReport');
+  } else if (item.title === 'কাস্টমার') {
+    navigate('CustomerIndex'); // ✅ Go to Customer Landing Page
+  } else {
+    showMessage({
+      message: 'শীঘ্রই আসছে',
+      type: 'info',
+      icon: 'info',
+      duration: 2000,
+      floating: true,
+    });
+  }
+};
+
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>

@@ -4,6 +4,8 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import BikroyReportCreate from '../screens/bikroy-report/BikroyReportCreate';
 import BikroyReportMainIndex from '../screens/bikroy-report/BikroyReportMainIndex';
 import HomeMainIndex from '../screens/home/HomeMainIndex';
+import CustomerCreate from '../screens/menus/customer/CustomerCreate';
+import CustomerIndex from '../screens/menus/customer/CustomerIndex';
 import MenuMainIndex from '../screens/menus/MenuMainIndex';
 import SettingsMainIndex from '../screens/settings/SettingsMainIndex';
 import SplashScreen from '../screens/splash/SplashScreen';
@@ -55,6 +57,16 @@ export const dashboardStack = [
    {
     name: 'MenuMainIndex',
     component: MenuMainIndex,
+  },
+
+    {
+    name: 'CustomerIndex',
+    component: CustomerIndex,
+  },
+
+    {
+    name: 'CustomerCreate',
+    component: CustomerCreate,
   },
 ];
 export const mergedStacks = [...dashboardStack, ...authStack];

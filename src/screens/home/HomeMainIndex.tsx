@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { use } from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
 import { Colors } from '../../constants/colors';
 import CustomCard from '../../components/CustomCard';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useUserStore } from '../../store/userStore';
+import { getData, StorageKeys } from '../../utils/storage';
 
 const HomeMainIndex = () => {
+  const {auth}=useUserStore()
+
+
   const overview = {
     totalSales: 120,
     totalRevenue: 55000,

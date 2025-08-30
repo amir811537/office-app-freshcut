@@ -5,9 +5,14 @@ import CustomHeader from '../../components/CustomHeader';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
-import { navigate } from '../../utils/navigationRef';
+import { navigate, resetAndNavigate } from '../../utils/navigationRef';
+import { logoutUser } from '../../services/loginService';
+import { showMessage } from 'react-native-flash-message';
+import { useUserStore } from '../../store/userStore';
 
 const SettingsMainIndex = () => {
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { clearAuth } = useUserStore();
   const user = {
     fullName: 'মোঃ আমীর হোসেন',
     role: 'employee',
@@ -17,11 +22,37 @@ const SettingsMainIndex = () => {
     userName: 'amir123',
   };
 
+const handleLogout = async () => {
+  const res = await logoutUser(setIsLoading);
+
+  if (res?.statusCode === 200) {
+    clearAuth();
+    showMessage({
+      message: res?.message || 'লগ আউট সফল হয়েছে!',
+      description: 'আপনি সাফল্যের সাথে লগ আউট করেছেন।',
+      type: 'success',
+      duration: 1000,
+      onHide: () => resetAndNavigate('LoginScreen'), // Navigate to login
+    });
+  } else {
+    showMessage({
+      message: 'লগ আউট ব্যর্থ হয়েছে!',
+      description: res?.message || 'কিছু ভুল হয়েছে, দয়া করে আবার চেষ্টা করুন।',
+      type: 'danger',
+      duration: 3000,
+    });
+  }
+};
+
+
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader title="প্রোফাইল" />
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {/* User Info Card */}
         <View style={styles.userCard}>
           <Text style={styles.userName}>{user.fullName}</Text>
@@ -34,8 +65,16 @@ const SettingsMainIndex = () => {
         <View style={styles.infoCard}>
           <InfoRow icon="mail-outline" label="ইমেইল" value={user.email} />
           <InfoRow icon="call-outline" label="ফোন" value={user.phone} />
-          <InfoRow icon="card-outline" label="কর্মচারী কোড" value={user.employeeCode} />
-          <InfoRow icon="person-outline" label="ইউজারনেম" value={user.userName} />
+          <InfoRow
+            icon="card-outline"
+            label="কর্মচারী কোড"
+            value={user.employeeCode}
+          />
+          <InfoRow
+            icon="person-outline"
+            label="ইউজারনেম"
+            value={user.userName}
+          />
         </View>
 
         {/* Action Buttons */}
@@ -51,8 +90,10 @@ const SettingsMainIndex = () => {
           </CustomButton>
 
           <CustomButton
+          loading={isLoading}
+          disabled={isLoading}
             title="লগ আউট"
-            onPress={() => navigate('Logout')}
+            onPress={() => handleLogout()}
             type="secondary"
             style={styles.actionButton}
             textStyle={{ fontSize: 16 }}
@@ -65,7 +106,15 @@ const SettingsMainIndex = () => {
   );
 };
 
-const InfoRow = ({ icon, label, value }: { icon: string; label: string; value: string }) => (
+const InfoRow = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+}) => (
   <View style={styles.infoRow}>
     <View style={styles.iconContainer}>
       <Icon name={icon} size={20} color={Colors.theme} />

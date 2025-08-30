@@ -3,6 +3,7 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
+import { getData, StorageKeys } from '../utils/storage';
 
 // Create Axios instance
 const axiosClient: AxiosInstance = axios.create({
@@ -16,11 +17,13 @@ const axiosClient: AxiosInstance = axios.create({
 // Request Interceptor
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const token=getData(StorageKeys.USER_DATA)?.accessToken
+ 
     // Example: Add token if available
     // const token = localStorage.getItem("accessToken");
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   error => Promise.reject(error),

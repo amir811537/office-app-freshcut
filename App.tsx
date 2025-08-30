@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigations/RootNavigator';
 import FlashMessage from 'react-native-flash-message';
+import { initUserFromStorage } from './src/store/userStore';
 
 const App = () => {
-  
+  useLayoutEffect(() => {
+    initUserFromStorage();
+  },[]);
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>

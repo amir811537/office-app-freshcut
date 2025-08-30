@@ -53,74 +53,127 @@ const BikroyReportMainIndex = () => {
     },
   ]);
 
-  const onViewPress = () => {
-    console.log('View data from', fromDate, 'to', toDate);
+  // 🔹 Status Style Helper
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return { style: styles.statusPaid, text: 'পরিশোধিত' };
+      case 'partial':
+        return { style: styles.statusPartial, text: 'আংশিক' };
+      default:
+        return { style: styles.statusDue, text: 'বাকি' };
+    }
   };
 
-  const renderSaleItem = ({ item }: any) => (
+  // 🔹 Edit Handler
+  const handleEdit = (item: any) => {
+    console.log('Editing item:', item);
+    // You can navigate to edit screen or open a modal here
+  };
+
+  // 🔹 Delete Handler
+  const handleDelete = (id: string) => {
+    console.log('Deleting item with ID:', id);
+    // Example: setRecentSales((prev) => prev.filter((s) => s._id !== id));
+  };
+
+  const onViewPress = () => {
+    console.log('View data from', fromDate, 'to', toDate);
+    // Later this will fetch filtered data from API
+  };
+
+  // 🔹 Render Single Sale Card
+// 🔹 Render Single Sale Card
+// 🔹 Render Single Sale Card
+const renderSaleItem = ({ item }: any) => {
+  const { style, text } = getStatusStyle(item.status);
+
+  const paidAmount = item.paidAmount ?? 0;
+  const dueAmount = Math.max(item.totalAmount - paidAmount, 0);
+  const extraAmount = paidAmount > item.totalAmount 
+    ? paidAmount - item.totalAmount 
+    : 0;
+
+  return (
     <View style={styles.saleCard}>
       <View style={styles.saleHeader}>
         <Text style={styles.saleCustomer}>{item.customer.name}</Text>
         <View style={styles.statusRow}>
+          <View style={[styles.statusBadge, style]}>
+            <Text style={styles.statusText}>{text}</Text>
+          </View>
           <TouchableOpacity
-            style={[
-              styles.statusButton,
-              item.status === 'paid'
-                ? { backgroundColor: Colors.greenFresh }
-                : item.status === 'partial'
-                ? { backgroundColor: Colors.orangeAccent }
-                : { backgroundColor: Colors.error },
-            ]}
+            style={styles.iconButton}
+            onPress={() => handleEdit(item)}
           >
-            <Text style={styles.statusText}>
-              {item.status === 'paid'
-                ? 'পরিশোধিত'
-                : item.status === 'partial'
-                ? 'আংশিক'
-                : 'বাকি'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
             <Icon name="create-outline" size={20} color={Colors.theme} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => handleDelete(item._id)}
+          >
             <Icon name="trash-outline" size={20} color={Colors.error} />
           </TouchableOpacity>
         </View>
       </View>
+
       <Text style={styles.saleProduct}>
-        {item.productName} × {item.quantity}
+        {item.productName} × {item.quantity} = {item.totalAmount.toLocaleString()} টাকা
       </Text>
-      <Text style={styles.saleAmount}>{item.totalAmount.toLocaleString()} টাকা</Text>
-      <Text style={styles.saleDate}>{dayjs(item.date).format('DD/MM/YYYY')}</Text>
+
+      <Text style={styles.saleAmount}>
+        জমা: {paidAmount.toLocaleString()} টাকা
+      </Text>
+
+      {dueAmount > 0 && (
+        <Text style={[styles.saleAmount, { color: Colors.error }]}>
+          বাকি: {dueAmount.toLocaleString()} টাকা
+        </Text>
+      )}
+
+      {extraAmount > 0 && (
+        <Text style={[styles.saleAmount, { color: Colors.greenFresh }]}>
+          অতিরিক্ত জমা: {extraAmount.toLocaleString()} টাকা
+        </Text>
+      )}
+
+      <Text style={styles.saleDate}>
+        {dayjs(item.date).format('DD/MM/YYYY')}
+      </Text>
     </View>
   );
+};
+
 
   return (
-    <WrapperContainer style={{ backgroundColor: Colors.background }}>
-      <CustomHeader title="বিক্রয় রিপোর্ট"  leftIconName="arrow-back"
-              onLeftPress={() => goBack()} />
+    <WrapperContainer style={styles.pageBackground}>
+      <CustomHeader
+        title="বিক্রয় রিপোর্ট"
+        leftIconName="arrow-back"
+        onLeftPress={() => goBack()}
+      />
+
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Date Filters */}
+        {/* 🔹 Filters */}
         <View style={styles.filtersContainer}>
           <CustomDatePicker
             name="fromDate"
             control={control as unknown as Control<any>}
             label="শুরুর তারিখ"
-            containerStyle={{ flex: 1, marginRight: 8 }}
+            containerStyle={styles.datePicker}
           />
           <CustomDatePicker
             name="toDate"
             control={control as unknown as Control<any>}
             label="শেষ তারিখ"
-            containerStyle={{ flex: 1, marginRight: 8 }}
+            containerStyle={styles.datePicker}
           />
           <TouchableOpacity style={styles.viewButton} onPress={onViewPress}>
             <Text style={styles.viewButtonText}>দেখুন</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Recent Sales List */}
+        {/* 🔹 Sales List */}
         <Text style={styles.sectionTitle}>সাম্প্রতিক বিক্রি</Text>
         <FlatList
           data={recentSales}
@@ -129,9 +182,15 @@ const BikroyReportMainIndex = () => {
           contentContainerStyle={styles.salesList}
         />
       </ScrollView>
-        <TouchableOpacity onPress={()=>navigate('BikroyReportCreate')} style={styles.fab} activeOpacity={0.7}>
-      <Icon name="add" size={28} color={Colors.white} />
-    </TouchableOpacity>
+
+      {/* 🔹 Floating Add Button */}
+      <TouchableOpacity
+        onPress={() => navigate('BikroyReportCreate')}
+        style={styles.fab}
+        activeOpacity={0.7}
+      >
+        <Icon name="add" size={28} color={Colors.white} />
+      </TouchableOpacity>
     </WrapperContainer>
   );
 };
@@ -139,14 +198,21 @@ const BikroyReportMainIndex = () => {
 export default BikroyReportMainIndex;
 
 const styles = StyleSheet.create({
+  pageBackground: {
+    backgroundColor: Colors.background,
+  },
   container: {
     paddingBottom: 120,
     paddingHorizontal: 16,
   },
   filtersContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-  
+    alignItems: 'flex-end',
+    marginBottom: 16,
+  },
+  datePicker: {
+    flex: 1,
+    marginRight: 8,
   },
   viewButton: {
     height: 44,
@@ -155,7 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginTop:23
+    marginBottom: 8,
   },
   viewButtonText: {
     color: Colors.white,
@@ -173,10 +239,10 @@ const styles = StyleSheet.create({
   },
   saleCard: {
     backgroundColor: Colors.card,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    elevation: 2,
+    marginBottom: 14,
+    elevation: 3,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -197,11 +263,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  statusButton: {
+  statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     marginRight: 8,
+  },
+  statusPaid: {
+    backgroundColor: Colors.greenFresh,
+  },
+  statusPartial: {
+    backgroundColor: Colors.orangeAccent,
+  },
+  statusDue: {
+    backgroundColor: Colors.error,
   },
   statusText: {
     color: Colors.white,
@@ -234,13 +309,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.lightText,
   },
-   fab: {
+  fab: {
     position: 'absolute',
-    bottom:80,
+    bottom: 80,
     right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.theme,

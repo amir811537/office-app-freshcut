@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
 import { useForm } from 'react-hook-form';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { showMessage } from 'react-native-flash-message';
-import { Colors } from '../../constants/colors';
-import CustomInput from '../../components/CustomInput';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import CustomButton from '../../components/CustomButton';
-import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
-import { goBack, navigate } from '../../utils/navigationRef';
+import CustomInput from '../../components/CustomInput';
+import WrapperContainer from '../../components/WrapperContainer';
+import { Colors } from '../../constants/colors';
 import { signupUser } from '../../services/loginService';
+import { goBack, navigate } from '../../utils/navigationRef';
 
 type SignUpForm = {
   fullName: string;
@@ -241,8 +240,8 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: Colors.background,
   },
   signupButton: {

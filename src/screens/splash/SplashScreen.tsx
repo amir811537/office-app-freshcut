@@ -10,14 +10,20 @@ import {
 import { resetAndNavigate } from '../../utils/navigationRef';
 import { Colors } from '../../constants/colors';
 import { IMAGES } from '../../constants/images';
+import { useUserStore } from '../../store/userStore';
 
 const SplashScreen = () => {
+  const { auth } = useUserStore();
   useEffect(() => {
     const timer = setTimeout(() => {
-      resetAndNavigate('LoginScreen');
+      if (auth?.accessToken) {
+        resetAndNavigate('BottomTab');
+      } else {
+        resetAndNavigate('LoginScreen');
+      }
     }, 1500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [auth?.accessToken]);
 
   return (
     <View style={styles.container}>

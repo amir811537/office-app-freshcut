@@ -24,7 +24,6 @@ interface CustomInputProps extends TextInputProps {
   error?: FieldError | undefined;
   disabled?: boolean;
 
-  // ✅ New props
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onLeftIconPress?: () => void;
@@ -52,7 +51,14 @@ const CustomInput: React.FC<CustomInputProps> = ({
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
 
-      <View style={styles.inputWrapper}>
+      {/* 🔥 Apply error border here */}
+      <View
+        style={[
+          styles.inputWrapper,
+          error ? styles.inputWrapperError : null,
+          disabled ? styles.inputWrapperDisabled : null,
+        ]}
+      >
         {leftIcon && (
           <TouchableOpacity
             onPress={onLeftIconPress}
@@ -69,12 +75,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
           rules={rules}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              style={[
-                styles.input,
-                inputStyle,
-                error ? styles.inputError : null,
-                disabled ? styles.inputDisabled : null,
-              ]}
+              style={[styles.input, inputStyle]}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -125,19 +126,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: Colors.white,
   },
+  inputWrapperError: {
+    borderColor: Colors.error, // 🔥 Red border on error
+  },
+  inputWrapperDisabled: {
+    backgroundColor: Colors.disabled,
+    borderColor: Colors.border,
+  },
   input: {
     flex: 1,
     height: 44,
     paddingHorizontal: 12,
     fontSize: 16,
     color: Colors.black,
-  },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  inputDisabled: {
-    backgroundColor: Colors.disabled,
-    color: Colors.inactive_tint,
   },
   iconContainer: {
     paddingHorizontal: 8,

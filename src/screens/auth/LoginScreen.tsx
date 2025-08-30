@@ -16,6 +16,9 @@ import CustomButton from '../../components/CustomButton';
 import { IMAGES } from '../../constants/images';
 import { navigate } from '../../utils/navigationRef';
 import WrapperContainer from '../../components/WrapperContainer';
+import { loginUser } from '../../services/loginService';
+import { showMessage } from 'react-native-flash-message';
+import { useUserStore } from '../../store/userStore';
 
 type LoginForm = {
   email: string;
@@ -31,12 +34,36 @@ const LoginScreen: React.FC = () => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const {auth,setAuth}=useUserStore();
 
-  const onSubmit = (data: LoginForm) => {
-    console.log('Login Data:', data);
-    navigate('BottomTab');
-    // 🔥 API call here
-  };
+ 
+
+const onSubmit = async (data: LoginForm) => {
+  console.log('Login Data:', data);
+
+  const res = await loginUser(data, setIsLoading);
+
+  if (res?.statusCode === 200) {
+     setAuth(res?.data)
+    showMessage({
+      message: res.message || 'লগইন সফল হয়েছে!',
+      description: 'স্বাগতম! আপনি এখন ড্যাশবোর্ডে যেতে পারেন।',
+      type: 'success',
+      duration: 1000,
+      onHide: () => navigate('BottomTab'), // go to main screen
+    });
+  } else {
+    console.log('error', JSON.stringify(res?.message,null,2));
+    showMessage({
+      message:res.message|| 'লগইন ব্যর্থ হয়েছে!',
+      description: res?.message || 'আপনার ইমেল বা পাসওয়ার্ড সঠিক কিনা যাচাই করুন।',
+      type: 'danger',
+      duration: 3000,
+    });
+  }
+};
+
 
   return (
   <WrapperContainer style={{ backgroundColor: Colors.background }}>
@@ -100,6 +127,8 @@ const LoginScreen: React.FC = () => {
 
       {/* Login Button */}
       <CustomButton
+        loading={isLoading}
+        disabled={isLoading}
         title="লগইন করুন"
         onPress={handleSubmit(onSubmit)}
         style={styles.loginButton}
