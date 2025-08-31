@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Platform,
-} from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { useForm, useWatch } from 'react-hook-form';
 import { showMessage } from 'react-native-flash-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -16,31 +12,19 @@ import CustomDatePicker from '../../components/CustomDatePicker';
 import WrapperContainer from '../../components/WrapperContainer';
 import { Colors } from '../../constants/colors';
 import { goBack } from '../../utils/navigationRef';
-import { createSale } from '../../services/salesApi';
-
-type SaleForm = {
-  customerId: string;
-  employeeId: string;
-  date: Date;
-  productName: string;
-  uom: string;
-  quantity: string;
-  price: string;
-  paidAmount: string;
-  totalPrice: string;
-  dueAmount: string;
-  notes?: string;
-};
+import { getAllCustomers } from '../../services/customerService';
 
 const CreateSaleScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [customerDDL, setCustomerDDL] = useState([]);
 
   const {
     control,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors },
-  } = useForm<SaleForm>({
+  } = useForm({
     defaultValues: {
       customerId: '',
       employeeId: '',
@@ -56,6 +40,34 @@ const CreateSaleScreen: React.FC = () => {
     },
   });
 
+  const fetchCustomers = async () => {
+    const res = await getAllCustomers({ page: 1, limit: 200 }, setLoading);
+
+    if (res?.data?.customers?.length > 0) {
+      console.log(res?.data?.customers);
+      // reset({
+      //   productName,
+      //   uom,
+      //   price,
+
+      // })
+      let modifyData = res?.data?.customers?.map(item => {
+        return {
+          ...item,
+          value: item?._id,
+          label: item?.name,
+        };
+      });
+      setCustomerDDL(modifyData);
+    } else {
+      setCustomerDDL([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
   // 🔹 Watch values for calculation
   const price = useWatch({ control, name: 'price' });
   const quantity = useWatch({ control, name: 'quantity' });
@@ -69,51 +81,7 @@ const CreateSaleScreen: React.FC = () => {
     setValue('dueAmount', due.toString());
   }, [price, quantity, paidAmount, setValue]);
 
-  const onSubmit = async (data: SaleForm) => {
-    try {
-      setLoading(true);
-
-      const payload = {
-        customerId: data.customerId,
-        employeeId: data.employeeId,
-        date: data.date,
-        productName: data.productName,
-        uom: data.uom,
-        quantity: Number(data.quantity),
-        price: Number(data.price),
-        paidAmount: Number(data.paidAmount) || 0,
-        notes: data.notes,
-      };
-
-      const res = await createSale(payload);
-
-      if (res?.status === 201) {
-        showMessage({
-          message: 'বিক্রয় সফলভাবে সংরক্ষণ করা হয়েছে ✅',
-          type: 'success',
-          icon: 'success',
-          duration: 2000,
-          floating: true,
-          onHide: () => goBack(),
-        });
-      } else {
-        showMessage({
-          message: res?.message || 'বিক্রয় সংরক্ষণ ব্যর্থ ❌',
-          type: 'danger',
-          icon: 'danger',
-        });
-      }
-    } catch (error: any) {
-      console.error('Error creating sale:', error);
-      showMessage({
-        message: error?.message || 'বিক্রয় সংরক্ষণ ব্যর্থ ❌',
-        type: 'danger',
-        icon: 'danger',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const onSubmit = async data => {};
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
@@ -138,16 +106,18 @@ const CreateSaleScreen: React.FC = () => {
           label="কাস্টমার"
           name="customerId"
           control={control}
-          items={[
-            { label: 'কাস্টমার ১', value: 'cust1' },
-            { label: 'কাস্টমার ২', value: 'cust2' },
-          ]}
+          onSearch={searchText => {
+            console.log(searchText);
+            // Call your search API here and update the items prop
+          }}
+          items={customerDDL}
           rules={{ required: 'কাস্টমার নির্বাচন করুন' }}
           error={errors.customerId}
+          enableSearch={true}
         />
 
         {/* 🔹 Employee */}
-        <CustomDropdown
+        {/* <CustomDropdown
           label="কর্মচারী"
           name="employeeId"
           control={control}
@@ -157,7 +127,7 @@ const CreateSaleScreen: React.FC = () => {
           ]}
           rules={{ required: 'কর্মচারী নির্বাচন করুন' }}
           error={errors.employeeId}
-        />
+        /> */}
 
         {/* 🔹 Date */}
         <CustomDatePicker

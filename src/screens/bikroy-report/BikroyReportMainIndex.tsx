@@ -83,67 +83,66 @@ const BikroyReportMainIndex = () => {
   };
 
   // 🔹 Render Single Sale Card
-// 🔹 Render Single Sale Card
-// 🔹 Render Single Sale Card
-const renderSaleItem = ({ item }: any) => {
-  const { style, text } = getStatusStyle(item.status);
+  // 🔹 Render Single Sale Card
+  // 🔹 Render Single Sale Card
+  const renderSaleItem = ({ item }: any) => {
+    const { style, text } = getStatusStyle(item.status);
 
-  const paidAmount = item.paidAmount ?? 0;
-  const dueAmount = Math.max(item.totalAmount - paidAmount, 0);
-  const extraAmount = paidAmount > item.totalAmount 
-    ? paidAmount - item.totalAmount 
-    : 0;
+    const paidAmount = item.paidAmount ?? 0;
+    const dueAmount = Math.max(item.totalAmount - paidAmount, 0);
+    const extraAmount =
+      paidAmount > item.totalAmount ? paidAmount - item.totalAmount : 0;
 
-  return (
-    <View style={styles.saleCard}>
-      <View style={styles.saleHeader}>
-        <Text style={styles.saleCustomer}>{item.customer.name}</Text>
-        <View style={styles.statusRow}>
-          <View style={[styles.statusBadge, style]}>
-            <Text style={styles.statusText}>{text}</Text>
+    return (
+      <View style={styles.saleCard}>
+        <View style={styles.saleHeader}>
+          <Text style={styles.saleCustomer}>{item.customer.name}</Text>
+          <View style={styles.statusRow}>
+            <View style={[styles.statusBadge, style]}>
+              <Text style={styles.statusText}>{text}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => handleEdit(item)}
+            >
+              <Icon name="create-outline" size={20} color={Colors.theme} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => handleDelete(item._id)}
+            >
+              <Icon name="trash-outline" size={20} color={Colors.error} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => handleEdit(item)}
-          >
-            <Icon name="create-outline" size={20} color={Colors.theme} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => handleDelete(item._id)}
-          >
-            <Icon name="trash-outline" size={20} color={Colors.error} />
-          </TouchableOpacity>
         </View>
+
+        <Text style={styles.saleProduct}>
+          {item.productName} × {item.quantity} ={' '}
+          {item.totalAmount.toLocaleString()} টাকা
+        </Text>
+
+        <Text style={styles.saleAmount}>
+          জমা: {paidAmount.toLocaleString()} টাকা
+        </Text>
+
+        {dueAmount > 0 && (
+          <Text style={[styles.saleAmount, { color: Colors.error }]}>
+            বাকি: {dueAmount.toLocaleString()} টাকা
+          </Text>
+        )}
+
+        {extraAmount > 0 && (
+          <Text style={[styles.saleAmount, { color: Colors.greenFresh }]}>
+            অতিরিক্ত জমা: {extraAmount.toLocaleString()} টাকা
+          </Text>
+        )}
+
+        <Text style={styles.saleDate}>
+          {dayjs(item.date).format('DD/MM/YYYY')}
+        </Text>
       </View>
-
-      <Text style={styles.saleProduct}>
-        {item.productName} × {item.quantity} = {item.totalAmount.toLocaleString()} টাকা
-      </Text>
-
-      <Text style={styles.saleAmount}>
-        জমা: {paidAmount.toLocaleString()} টাকা
-      </Text>
-
-      {dueAmount > 0 && (
-        <Text style={[styles.saleAmount, { color: Colors.error }]}>
-          বাকি: {dueAmount.toLocaleString()} টাকা
-        </Text>
-      )}
-
-      {extraAmount > 0 && (
-        <Text style={[styles.saleAmount, { color: Colors.greenFresh }]}>
-          অতিরিক্ত জমা: {extraAmount.toLocaleString()} টাকা
-        </Text>
-      )}
-
-      <Text style={styles.saleDate}>
-        {dayjs(item.date).format('DD/MM/YYYY')}
-      </Text>
-    </View>
-  );
-};
-
+    );
+  };
 
   return (
     <WrapperContainer style={styles.pageBackground}>
@@ -153,7 +152,7 @@ const renderSaleItem = ({ item }: any) => {
         onLeftPress={() => goBack()}
       />
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.container}>
         {/* 🔹 Filters */}
         <View style={styles.filtersContainer}>
           <CustomDatePicker
@@ -177,11 +176,11 @@ const renderSaleItem = ({ item }: any) => {
         <Text style={styles.sectionTitle}>সাম্প্রতিক বিক্রি</Text>
         <FlatList
           data={recentSales}
-          keyExtractor={(item) => item._id}
+          keyExtractor={item => item._id}
           renderItem={renderSaleItem}
           contentContainerStyle={styles.salesList}
         />
-      </ScrollView>
+      </View>
 
       {/* 🔹 Floating Add Button */}
       <TouchableOpacity

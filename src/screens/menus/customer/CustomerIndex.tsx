@@ -1,49 +1,137 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   FlatList,
   TouchableOpacity,
-  Dimensions,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import WrapperContainer from '../../../components/WrapperContainer';
 import CustomHeader from '../../../components/CustomHeader';
 import { Colors } from '../../../constants/colors';
 import { goBack, navigate } from '../../../utils/navigationRef';
+import {
+  getAllCustomers,
+  deleteCustomer,
+} from '../../../services/customerService';
+import { showMessage } from 'react-native-flash-message';
+import CustomLoader from '../../../components/CustomLoader';
+import { useIsFocused } from '@react-navigation/native';
 
-const { width } = Dimensions.get('window');
 const CARD_MARGIN = 12;
 
-const customers = [
-  { id: '1', name: 'রহিম উদ্দিন', phone: '+8801712345678', previousDue: 1200, address: 'ঢাকা, বাংলাদেশ' },
-  { id: '2', name: 'করিম মিয়া', phone: '+8801912345678', previousDue: 0, address: 'চট্টগ্রাম, বাংলাদেশ' },
-  { id: '3', name: 'সুমাইয়া আক্তার', phone: '+8801512345678', previousDue: 500, address: 'সিলেট, বাংলাদেশ' },
-];
+const CustomerIndex: React.FC = () => {
+  const isFoucsed = useIsFocused();
+  const [customerList, setCustomerList] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
-const CustomerIndex = () => {
-  const [customerList, setCustomerList] = useState(customers);
+  const fetchCustomers = async () => {
+    try {
+      const res = await getAllCustomers({ page: 1, limit: 200 }, setLoading);
+      if (res?.success && res.data?.customers) {
+        setCustomerList(res.data.customers);
+      } else {
+        const message =
+          res?.message || 'কাস্টমার তথ্য আনার সময় সমস্যা হয়েছে ❌';
+        showMessage({
+          message,
+          type: 'danger',
+          icon: 'danger',
+          duration: 2000,
+          floating: true,
+        });
+      }
+    } catch (error: any) {
+      const message =
+        error?.message || 'কাস্টমার তথ্য আনার সময় সমস্যা হয়েছে ❌';
+      showMessage({
+        message,
+        type: 'danger',
+        icon: 'danger',
+        duration: 2000,
+        floating: true,
+      });
+    }
+  };
 
-  const handleEdit = (item: typeof customers[0]) => {
-    console.log('Edit customer:', item);
-    // Navigate to edit customer screen
+  useEffect(() => {
+    fetchCustomers();
+  }, [isFoucsed]);
+
+  const handleEdit = (item: any) => {
+    navigate('CustomerCreate', { customer: item });
   };
 
   const handleDelete = (id: string) => {
-    console.log('Delete customer id:', id);
-    setCustomerList(prev => prev.filter(c => c.id !== id));
+    Alert.alert(
+      'নিশ্চিত করুন',
+      'আপনি কি নিশ্চিতভাবে কাস্টমারটি মুছতে চান?',
+      [
+        {
+          text: 'বাতিল',
+          style: 'cancel',
+        },
+        {
+          text: 'মুছে ফেলুন',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const res = await deleteCustomer(id, setLoading);
+              if (res?.success) {
+                setCustomerList(prev => prev.filter(c => c._id !== id));
+                showMessage({
+                  message:
+                    res.message || 'কাস্টমার সফলভাবে মুছে ফেলা হয়েছে ✅',
+                  type: 'success',
+                  icon: 'success',
+                  duration: 2000,
+                  floating: true,
+                });
+              } else {
+                showMessage({
+                  message: res?.message || 'কাস্টমার মুছতে সমস্যা হয়েছে ❌',
+                  type: 'danger',
+                  icon: 'danger',
+                  duration: 2000,
+                  floating: true,
+                });
+              }
+            } catch (error: any) {
+              showMessage({
+                message: error?.message || 'কাস্টমার মুছতে সমস্যা হয়েছে ❌',
+                type: 'danger',
+                icon: 'danger',
+                duration: 2000,
+                floating: true,
+              });
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
-  const renderCustomer = ({ item }: { item: typeof customers[0] }) => (
+  const renderCustomer = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.name}>{item.name}</Text>
         <View style={styles.iconRow}>
-          <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconButton}>
+          <TouchableOpacity
+            onPress={() => handleEdit(item)}
+            style={styles.iconButton}
+          >
             <Icon name="create-outline" size={20} color={Colors.theme} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconButton}>
+          <TouchableOpacity
+            onPress={() => handleDelete(item._id)}
+            style={styles.iconButton}
+          >
             <Icon name="trash-outline" size={20} color={Colors.error} />
           </TouchableOpacity>
         </View>
@@ -52,7 +140,12 @@ const CustomerIndex = () => {
       <Text style={styles.address}>ঠিকানা: {item.address}</Text>
       <View style={styles.dueContainer}>
         <Text style={styles.dueLabel}>বকেয়া:</Text>
-        <Text style={[styles.dueAmount, { color: item.previousDue > 0 ? Colors.error : Colors.greenFresh }]}>
+        <Text
+          style={[
+            styles.dueAmount,
+            { color: item.previousDue > 0 ? Colors.error : Colors.greenFresh },
+          ]}
+        >
           {item.previousDue > 0 ? `${item.previousDue} টাকা` : 'কোন বকেয়া নেই'}
         </Text>
       </View>
@@ -61,11 +154,15 @@ const CustomerIndex = () => {
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
-      <CustomHeader title="কাস্টমার তালিকা"   leftIconName="arrow-back"   onLeftPress={() => goBack()} />
+      <CustomHeader
+        title="কাস্টমার তালিকা"
+        leftIconName="arrow-back"
+        onLeftPress={() => goBack()}
+      />
 
       <FlatList
         data={customerList}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id}
         renderItem={renderCustomer}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -79,6 +176,9 @@ const CustomerIndex = () => {
       >
         <Icon name="add" size={28} color={Colors.white} />
       </TouchableOpacity>
+
+      {/* Loader */}
+      <CustomLoader loading={loading} />
     </WrapperContainer>
   );
 };

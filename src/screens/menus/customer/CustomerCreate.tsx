@@ -1,23 +1,22 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  ScrollView,
-  Platform,
-  Text,
-} from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import React, { useEffect, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
+import { useForm } from 'react-hook-form';
 import { showMessage } from 'react-native-flash-message';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { goBack } from '../../../utils/navigationRef';
 
 import CustomButton from '../../../components/CustomButton';
 import CustomDropdown from '../../../components/CustomDropdown';
 import CustomHeader from '../../../components/CustomHeader';
 import CustomInput from '../../../components/CustomInput';
 import WrapperContainer from '../../../components/WrapperContainer';
-import { goBack } from '../../../utils/navigationRef';
 import { Colors } from '../../../constants/colors';
-
+import {
+  createCustomer,
+  updateCustomer,
+  getCustomerById,
+} from '../../../services/customerService';
+import { useRoute } from '@react-navigation/native';
 
 // Form type
 type CustomerForm = {
@@ -36,6 +35,8 @@ type CustomerForm = {
 
 const CustomerCreate: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const route = useRoute<any>();
+  const customerId = route?.params?.customer?._id;
 
   const {
     control,
@@ -58,50 +59,91 @@ const CustomerCreate: React.FC = () => {
     },
   });
 
-  const onSubmit = async (data: CustomerForm) => {
-    try {
-      setLoading(true);
+  // Fetch customer data if editing
+  useEffect(() => {
+    if (customerId) {
+      const fetchCustomer = async () => {
+        setLoading(true);
+        const res = await getCustomerById(customerId, setLoading);
+        setLoading(false);
 
-      const payload = {
-        ...data,
-        defaultPrice: Number(data.defaultPrice) || 0,
-        previousDue: Number(data.previousDue) || 0,
-        dueLimit: Number(data.dueLimit),
+        if (res?.success && res.data) {
+          const customer = res.data;
+          reset({
+            name: customer.name,
+            email: customer.email || '',
+            phone: customer.phone,
+            address: customer.address || '',
+            customerType: customer.customerType || 'Regular',
+            defaultProductName: customer.defaultProductName || 'Boiler',
+            defaultUOM: customer.defaultUOM || 'kg',
+            defaultPrice: customer.defaultPrice?.toString() || '',
+            previousDue: customer.previousDue?.toString() || '',
+            dueLimit: customer.dueLimit?.toString() || '',
+            isActive: customer.isActive ?? true,
+          });
+        } else {
+          showMessage({
+            message: res?.message || 'কাস্টমার তথ্য আনার সময় সমস্যা হয়েছে ❌',
+            type: 'danger',
+            icon: 'danger',
+            duration: 2000,
+            floating: true,
+          });
+        }
       };
+      fetchCustomer();
+    }
+  }, [customerId]);
 
-      const res = '';
+  // Submit handler
+  const onSubmit = async (data: CustomerForm) => {
+    const payload = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      customerType: data.customerType,
+      defaultProductName: data.defaultProductName,
+      defaultUOM: data.defaultUOM,
+      defaultPrice: +data.defaultPrice || 0,
+      previousDue: +data.previousDue || 0,
+      dueLimit: +data.dueLimit || 0,
+      isActive: data.isActive,
+    };
 
-      if (res?.status === 201) {
-        showMessage({
-          message: 'কাস্টমার সফলভাবে সংরক্ষণ করা হয়েছে ✅',
-          type: 'success',
-          icon: 'success',
-          duration: 2000,
-          floating: true,
-          onHide: () => goBack(),
-        });
-      } else {
-        showMessage({
-          message: res?.message || 'কাস্টমার সংরক্ষণ ব্যর্থ ❌',
-          type: 'danger',
-          icon: 'danger',
-        });
-      }
-    } catch (error: any) {
+    setLoading(true);
+    const res = customerId
+      ? await updateCustomer(customerId, payload, setLoading)
+      : await createCustomer(payload, setLoading);
+    setLoading(false);
+
+    if (res?.statusCode === 200 || res?.statusCode === 201) {
       showMessage({
-        message: error?.message || 'কাস্টমার সংরক্ষণ ব্যর্থ ❌',
+        message:
+          res?.message ||
+          (customerId
+            ? 'কাস্টমার সফলভাবে আপডেট হয়েছে ✅'
+            : 'কাস্টমার সফলভাবে সংরক্ষণ করা হয়েছে ✅'),
+        type: 'success',
+        icon: 'success',
+        duration: 1000,
+        floating: true,
+        onHide: () => goBack(),
+      });
+    } else {
+      showMessage({
+        message: res?.message || 'কাস্টমার সংরক্ষণ ব্যর্থ ❌',
         type: 'danger',
         icon: 'danger',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader
-        title="নতুন কাস্টমার তৈরি করুন"
+        title={customerId ? 'কাস্টমার আপডেট করুন' : 'নতুন কাস্টমার তৈরি করুন'}
         leftIconName="arrow-back"
         onLeftPress={() => goBack()}
       />
@@ -116,7 +158,6 @@ const CustomerCreate: React.FC = () => {
         enableAutomaticScroll
         showsVerticalScrollIndicator={false}
       >
-        {/* Name */}
         <CustomInput
           label="নাম"
           control={control}
@@ -126,17 +167,15 @@ const CustomerCreate: React.FC = () => {
           error={errors.name}
         />
 
-        {/* Email */}
         <CustomInput
           label="ইমেল"
           control={control}
           name="email"
-          placeholder="ইমেল লিখুন (ঐচ্ছিক)"
+          placeholder="ইমেল লিখুন"
           keyboardType="email-address"
           error={errors.email}
         />
 
-        {/* Phone */}
         <CustomInput
           label="ফোন"
           control={control}
@@ -147,17 +186,15 @@ const CustomerCreate: React.FC = () => {
           error={errors.phone}
         />
 
-        {/* Address */}
         <CustomInput
           label="ঠিকানা"
           control={control}
           name="address"
-          placeholder="ঠিকানা লিখুন (ঐচ্ছিক)"
+          placeholder="ঠিকানা লিখুন"
           multiline
           error={errors.address}
         />
 
-        {/* Customer Type */}
         <CustomDropdown
           label="কাস্টমার টাইপ"
           name="customerType"
@@ -170,35 +207,34 @@ const CustomerCreate: React.FC = () => {
           error={errors.customerType}
         />
 
-        {/* Default Product Name */}
         <CustomInput
           label="ডিফল্ট পণ্য নাম"
           control={control}
           name="defaultProductName"
           placeholder="যেমন: Boiler"
+          rules={{ required: 'ডিফল্ট পণ্য নাম আবশ্যক' }}
           error={errors.defaultProductName}
         />
 
-        {/* Default UOM */}
         <CustomInput
           label="ডিফল্ট একক (UOM)"
           control={control}
           name="defaultUOM"
           placeholder="যেমন: kg"
+          rules={{ required: 'ডিফল্ট একক আবশ্যক' }}
           error={errors.defaultUOM}
         />
 
-        {/* Default Price */}
         <CustomInput
           label="ডিফল্ট দাম"
           control={control}
           name="defaultPrice"
           keyboardType="numeric"
           placeholder="ডিফল্ট দাম লিখুন"
+          rules={{ required: 'ডিফল্ট দাম আবশ্যক' }}
           error={errors.defaultPrice}
         />
 
-        {/* Previous Due */}
         <CustomInput
           label="পূর্বের বকেয়া"
           control={control}
@@ -208,7 +244,6 @@ const CustomerCreate: React.FC = () => {
           error={errors.previousDue}
         />
 
-        {/* Due Limit */}
         <CustomInput
           label="বকেয়ার সীমা"
           control={control}
@@ -219,10 +254,10 @@ const CustomerCreate: React.FC = () => {
           error={errors.dueLimit}
         />
 
-        {/* Submit Button */}
         <CustomButton
           loading={loading}
-          title="সাবমিট করুন"
+          disabled={loading}
+          title={customerId ? 'আপডেট করুন' : 'সাবমিট করুন'}
           onPress={handleSubmit(onSubmit)}
           style={styles.submitButton}
         />

@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Control, Controller, FieldError } from 'react-hook-form';
 import {
   FlatList,
   Modal,
   StyleSheet,
   Text,
+  TextInput,
   TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
+  Dimensions,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+
+const { width, height } = Dimensions.get('window');
 
 interface DropdownItem {
   value: number | string;
@@ -32,7 +36,11 @@ interface CustomDropdownProps {
   errorStyle?: TextStyle;
   error?: FieldError | undefined;
   onSelected?: (item: DropdownItem) => void;
-  disabled?: boolean; // ✅ added disabled prop
+  disabled?: boolean;
+  // New props for search functionality
+  onSearch?: (searchText: string) => void;
+  searchPlaceholder?: string;
+  enableSearch?: boolean;
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -49,9 +57,32 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   errorStyle,
   error,
   onSelected,
-  disabled = false, // default false
+  disabled = false,
+  onSearch,
+  searchPlaceholder = 'Search...',
+  enableSearch = false,
 }) => {
   const [visible, setVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [filteredItems, setFilteredItems] = useState<DropdownItem[]>(items);
+
+  useEffect(() => {
+    if (enableSearch && onSearch) {
+      onSearch(searchText);
+    } else {
+      const filtered = items.filter(item =>
+        item.label.toLowerCase().includes(searchText.toLowerCase()),
+      );
+      setFilteredItems(filtered);
+    }
+  }, [searchText, items, enableSearch, onSearch]);
+
+  useEffect(() => {
+    if (!visible) {
+      setSearchText('');
+      if (!onSearch) setFilteredItems(items);
+    }
+  }, [visible, items, onSearch]);
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -68,7 +99,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
               : items.find(item => item.value === value);
 
           const handleSelect = (item: DropdownItem) => {
-            onChange(item); // store full object
+            onChange(item);
             setVisible(false);
             onSelected?.(item);
           };
@@ -80,16 +111,16 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   styles.dropdown,
                   dropdownStyle,
                   error ? styles.inputError : null,
-                  disabled && styles.disabledDropdown, // ✅ gray background
+                  disabled && styles.disabledDropdown,
                 ]}
-                onPress={() => !disabled && setVisible(true)} // ✅ disable interaction
+                onPress={() => !disabled && setVisible(true)}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.dropdownText,
                     dropdownTextStyle,
-                    disabled && styles.disabledText, // ✅ gray text
+                    disabled && styles.disabledText,
                   ]}
                 >
                   {selectedItem?.label ?? placeholder}
@@ -112,17 +143,47 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     onPress={() => setVisible(false)}
                   >
                     <View style={styles.modalContent}>
+                      {enableSearch && (
+                        <View style={styles.searchContainer}>
+                          <TextInput
+                            style={styles.searchInput}
+                            placeholder={searchPlaceholder}
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            autoFocus={true}
+                          />
+                        </View>
+                      )}
                       <FlatList
-                        data={items}
+                        data={onSearch ? items : filteredItems}
                         keyExtractor={item => item.value.toString()}
                         renderItem={({ item }) => (
                           <TouchableOpacity
-                            style={styles.item}
+                            style={[
+                              styles.item,
+                              selectedItem?.value === item.value &&
+                                styles.selectedItem,
+                            ]}
                             onPress={() => handleSelect(item)}
                           >
-                            <Text style={styles.itemText}>{item.label}</Text>
+                            <Text
+                              style={[
+                                styles.itemText,
+                                selectedItem?.value === item.value &&
+                                  styles.selectedItemText,
+                              ]}
+                            >
+                              {item.label}
+                            </Text>
                           </TouchableOpacity>
                         )}
+                        ListEmptyComponent={
+                          <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>
+                              No options found
+                            </Text>
+                          </View>
+                        }
                       />
                     </View>
                   </TouchableOpacity>
@@ -154,25 +215,26 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   dropdown: {
-    height: 44,
-    paddingHorizontal: 12,
+    height: 46,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: Colors.white,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    elevation: 1,
   },
   disabledDropdown: {
-    backgroundColor: Colors.disabled, // light gray when disabled
+    backgroundColor: Colors.disabled,
   },
   dropdownText: {
     fontSize: 16,
     color: Colors.black,
   },
   disabledText: {
-    color: Colors.inactive_tint, // gray text when disabled
+    color: Colors.inactive_tint,
   },
   inputError: {
     borderColor: Colors.error,
@@ -183,29 +245,67 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
   arrow: {
-    fontSize: 12,
+    fontSize: 14,
     color: Colors.text,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
+    width: width * 0.85, // 85% of screen width
+    height: height * 0.6, // max 60% of screen height
     backgroundColor: Colors.white,
-    marginHorizontal: 20,
-    borderRadius: 8,
-    maxHeight: 300,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  item: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  searchContainer: {
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    backgroundColor: Colors.surfaceLight,
+  },
+  searchInput: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    backgroundColor: Colors.white,
+  },
+  item: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  selectedItem: {
+    backgroundColor: Colors.theme + '15', // light overlay for selected
   },
   itemText: {
     fontSize: 16,
     color: Colors.black,
+  },
+  selectedItemText: {
+    fontWeight: 'bold',
+    color: Colors.theme,
+  },
+  emptyContainer: {
+    padding: 30,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.lightText,
   },
 });
 

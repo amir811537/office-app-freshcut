@@ -11,6 +11,7 @@ import { resetAndNavigate } from '../../utils/navigationRef';
 import { Colors } from '../../constants/colors';
 import { IMAGES } from '../../constants/images';
 import { useUserStore } from '../../store/userStore';
+import WrapperContainer from '../../components/WrapperContainer';
 
 const SplashScreen = () => {
   const { auth } = useUserStore();
@@ -26,19 +27,21 @@ const SplashScreen = () => {
   }, [auth?.accessToken]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor={Colors.theme} barStyle="light-content" />
+    <WrapperContainer style={{ backgroundColor: Colors.background }}>
+      <View style={styles.container}>
+        <StatusBar backgroundColor={Colors.theme} barStyle="light-content" />
 
-      <Image source={IMAGES.logo} style={styles.logo} resizeMode="contain" />
+        <Image source={IMAGES.logo} style={styles.logo} resizeMode="contain" />
 
-      <Text style={styles.appName}>FreshCut</Text>
+        <Text style={styles.appName}>FreshCut</Text>
 
-      <ActivityIndicator
-        size="large"
-        color={Colors.theme}
-        style={styles.loader}
-      />
-    </View>
+        <ActivityIndicator
+          size="large"
+          color={Colors.theme}
+          style={styles.loader}
+        />
+      </View>
+    </WrapperContainer>
   );
 };
 
