@@ -31,7 +31,8 @@ interface CustomDatePickerProps {
   placeholder?: string;
   accessibilityLabel?: string;
   testID?: string;
-  disabled?: boolean; // ✅ add disabled prop
+  disabled?: boolean;
+  onChange?: (date: Date) => void; // ✅ external onChange callback
 }
 
 const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
@@ -49,7 +50,8 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   placeholder = 'তারিখ নির্বাচন করুন',
   accessibilityLabel,
   testID,
-  disabled = false, // default false
+  disabled = false,
+  onChange: externalOnChange, // ✅ new prop
 }) => {
   const [showPicker, setShowPicker] = useState(false);
 
@@ -60,7 +62,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       rules={rules}
       render={({ field: { onChange, value }, fieldState: { error } }) => {
         const displayDate = value
-          ? dayjs(value).format('DD MMMM YYYY')
+          ? dayjs(value).format('DD-MM-YYYY')
           : placeholder;
 
         const onChangeDate = (
@@ -69,7 +71,8 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         ) => {
           if (Platform.OS !== 'ios') setShowPicker(false);
           if (selectedDate) {
-            onChange(selectedDate);
+            onChange(selectedDate); // ✅ update RHF
+            externalOnChange?.(selectedDate); // ✅ trigger external handler
           }
         };
 
@@ -82,9 +85,9 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                 styles.input,
                 inputStyle,
                 error ? styles.inputError : null,
-                disabled && styles.disabledInput, // ✅ gray background when disabled
+                disabled && styles.disabledInput,
               ]}
-              onPress={() => !disabled && setShowPicker(true)} // ✅ prevent opening picker
+              onPress={() => !disabled && setShowPicker(true)}
               activeOpacity={0.7}
               accessibilityLabel={accessibilityLabel || label || placeholder}
               accessibilityRole="button"
@@ -95,7 +98,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                   styles.text,
                   textStyle,
                   !value && styles.placeholder,
-                  disabled && styles.disabledText, // ✅ gray text when disabled
+                  disabled && styles.disabledText,
                 ]}
               >
                 {displayDate}
@@ -162,9 +165,9 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
   disabledInput: {
-    backgroundColor: Colors.disabled, // light gray background
+    backgroundColor: Colors.disabled,
   },
   disabledText: {
-    color: Colors.inactive_tint, // gray text
+    color: Colors.inactive_tint,
   },
 });

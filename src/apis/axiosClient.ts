@@ -5,9 +5,17 @@ import axios, {
 } from 'axios';
 import { getData, StorageKeys } from '../utils/storage';
 
+console.log(process.env.NODE_ENV);
+
+// 🔹 Set baseURL based on environment
+const BASE_URL =
+  process.env.NODE_ENV === 'development'
+    ? 'http://192.168.2.254:5000'
+    : 'https://fresh-cut-backend.vercel.app';
+
 // Create Axios instance
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: 'https://fresh-cut-backend.vercel.app', // Replace with backend baseURL
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -17,10 +25,8 @@ const axiosClient: AxiosInstance = axios.create({
 // Request Interceptor
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token=getData(StorageKeys.USER_DATA)?.accessToken
- 
-    // Example: Add token if available
-    // const token = localStorage.getItem("accessToken");
+    const token = getData(StorageKeys.USER_DATA)?.accessToken;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,10 +37,7 @@ axiosClient.interceptors.request.use(
 
 // Response Interceptor
 axiosClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    // Return only the data if you want cleaner API calls
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async error => {
     if (!error.response) {
       console.error('Network Error: Please check your internet connection.');
@@ -43,18 +46,14 @@ axiosClient.interceptors.response.use(
         isNetworkError: true,
       });
     }
+
     const status = error.response?.status;
 
     if (status === 401) {
       console.warn('Unauthorized — token may have expired');
 
       try {
-        // Token refresh logic example:
-        // const newAccessToken = await refreshToken();
-        // if (newAccessToken) {
-        //   error.config.headers.Authorization = `Bearer ${newAccessToken}`;
-        //   return axiosClient(error.config);
-        // }
+        // Optional token refresh logic here
       } catch (refreshError) {
         console.error('Error refreshing token', refreshError);
       }

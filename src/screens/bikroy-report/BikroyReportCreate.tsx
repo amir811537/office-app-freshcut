@@ -1,66 +1,108 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { Platform, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import CustomButton from '../../components/CustomButton';
+import CustomDatePicker from '../../components/CustomDatePicker';
+import CustomDropdown from '../../components/CustomDropdown';
 import CustomHeader from '../../components/CustomHeader';
 import CustomInput from '../../components/CustomInput';
-import CustomDropdown from '../../components/CustomDropdown';
-import CustomDatePicker from '../../components/CustomDatePicker';
 import WrapperContainer from '../../components/WrapperContainer';
 import { Colors } from '../../constants/colors';
-import { goBack } from '../../utils/navigationRef';
 import { getAllCustomers } from '../../services/customerService';
+import { createSale } from '../../services/salesService';
+import { goBack } from '../../utils/navigationRef';
+import { useUserStore } from '../../store/userStore';
+
+// 🔹 Types
+interface Customer {
+  _id: string;
+  name: string;
+  defaultProductName?: string;
+  defaultUOM?: string;
+  defaultPrice?: number;
+  previousDue?: number; // Add previous due field
+  dueLimit?: number; // Add due limit field
+  value: string;
+  label: string;
+}
+
+interface FormValues {
+  customer: Customer | null;
+  date: Date;
+  productName: string;
+  uom: string;
+  price: string;
+  quantity: string;
+  paidAmount: string;
+  totalPrice: string;
+  dueAmount: string;
+  previousDue?: string; // Add previous due to form
+  dueLimit?: string; // Add due limit to form
+  notes?: string;
+}
 
 const CreateSaleScreen: React.FC = () => {
+  const { auth } = useUserStore();
   const [loading, setLoading] = useState(false);
-  const [customerDDL, setCustomerDDL] = useState([]);
+  const [customerOptions, setCustomerOptions] = useState<Customer[]>([]);
 
   const {
     control,
     handleSubmit,
     setValue,
-    reset,
+    watch,
     formState: { errors },
-  } = useForm({
+  } = useForm<FormValues>({
     defaultValues: {
-      customerId: '',
-      employeeId: '',
       date: new Date(),
+      customer: null,
       productName: '',
       uom: '',
-      quantity: '',
       price: '',
+      quantity: '',
       paidAmount: '',
       totalPrice: '',
       dueAmount: '',
+      previousDue: '',
+      dueLimit: '',
       notes: '',
     },
   });
 
+  const price = watch('price');
+  const quantity = watch('quantity');
+  const paidAmount = watch('paidAmount');
+
+  // 🔹 Calculate total and due amounts
+  useEffect(() => {
+    const total = parseFloat(price || '0') * parseFloat(quantity || '0');
+    const due = total - parseFloat(paidAmount || '0');
+    setValue('totalPrice', total.toFixed(2));
+    setValue('dueAmount', due < 0 ? '0' : due.toFixed(2));
+  }, [price, quantity, paidAmount, setValue]);
+
+  // 🔹 Fetch customers
   const fetchCustomers = async () => {
-    const res = await getAllCustomers({ page: 1, limit: 200 }, setLoading);
-
-    if (res?.data?.customers?.length > 0) {
-      console.log(res?.data?.customers);
-      // reset({
-      //   productName,
-      //   uom,
-      //   price,
-
-      // })
-      let modifyData = res?.data?.customers?.map(item => {
-        return {
+    try {
+      const res = await getAllCustomers({ page: 1, limit: 200 }, setLoading);
+      if (res?.data?.customers?.length > 0) {
+        const options: Customer[] = res.data.customers.map((item: any) => ({
           ...item,
-          value: item?._id,
-          label: item?.name,
-        };
+          value: item._id,
+          label: item.name,
+        }));
+        setCustomerOptions(options);
+      } else {
+        setCustomerOptions([]);
+      }
+    } catch {
+      showMessage({
+        message: 'কাস্টমার লোড করতে সমস্যা হয়েছে!',
+        type: 'danger',
       });
-      setCustomerDDL(modifyData);
-    } else {
-      setCustomerDDL([]);
     }
   };
 
@@ -68,27 +110,82 @@ const CreateSaleScreen: React.FC = () => {
     fetchCustomers();
   }, []);
 
-  // 🔹 Watch values for calculation
-  const price = useWatch({ control, name: 'price' });
-  const quantity = useWatch({ control, name: 'quantity' });
-  const paidAmount = useWatch({ control, name: 'paidAmount' });
+  // 🔹 Handle submit
+  const onSubmit = async (data: FormValues) => {
+    try {
+      if (!data.customer) {
+        showMessage({
+          message: 'কাস্টমার নির্বাচন করুন',
+          type: 'danger',
+        });
+        return;
+      }
 
-  // 🔹 Auto-calculate total & due
-  useEffect(() => {
-    const total = (Number(price) || 0) * (Number(quantity) || 0);
-    const due = total - (Number(paidAmount) || 0);
-    setValue('totalPrice', total.toString());
-    setValue('dueAmount', due.toString());
-  }, [price, quantity, paidAmount, setValue]);
+      if (!auth?.user?._id) {
+        showMessage({
+          message: 'ইউজার তথ্য পাওয়া যায়নি',
+          type: 'danger',
+        });
+        return;
+      }
 
-  const onSubmit = async data => {};
+      const payload = {
+        customerId: data.customer._id,
+        employeeId: auth.user._id,
+        productName: data.productName,
+        uom: data.uom,
+        quantity: +data.quantity,
+        price: +data.price,
+        paidAmount: +data.paidAmount,
+        notes: data.notes || '',
+      };
+
+      const result = await createSale(payload, setLoading);
+      console.log('result ', JSON.stringify(result, null, 2));
+
+      if (result?.statusCode == 201) {
+        showMessage({
+          message: result?.message || 'সফলভাবে বিক্রয় তৈরি হয়েছে!',
+          type: 'success',
+        });
+        goBack();
+      } else {
+        showMessage({
+          message: result?.message || 'বিক্রয় তৈরি করতে ব্যর্থ হয়েছে!',
+          type: 'danger',
+        });
+      }
+    } catch (error) {
+      showMessage({
+        message: 'বিক্রয় তৈরি করতে ব্যর্থ হয়েছে!',
+        type: 'danger',
+      });
+    }
+  };
+
+  // 🔹 Handle customer selection
+  const onCustomerSelect = (selected: Customer) => {
+    setValue('customer', selected, { shouldValidate: true });
+    setValue('productName', selected.defaultProductName || '');
+    setValue('uom', selected.defaultUOM || '');
+    setValue('price', selected.defaultPrice?.toString() || '');
+    setValue('previousDue', selected.previousDue?.toString() || '0');
+    setValue('dueLimit', selected.dueLimit?.toString() || '0');
+  };
+
+  // 🔹 Disable submit if required fields are missing
+  const isSubmitDisabled =
+    !watch('customer') ||
+    !watch('price') ||
+    !watch('quantity') ||
+    !watch('paidAmount');
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader
         title="নতুন বিক্রয় তৈরি করুন"
         leftIconName="arrow-back"
-        onLeftPress={() => goBack()}
+        onLeftPress={goBack}
       />
 
       <KeyboardAwareScrollView
@@ -101,35 +198,19 @@ const CreateSaleScreen: React.FC = () => {
         enableAutomaticScroll
         showsVerticalScrollIndicator={false}
       >
-        {/* 🔹 Customer */}
+        {/* Customer */}
         <CustomDropdown
           label="কাস্টমার"
-          name="customerId"
+          name="customer"
           control={control}
-          onSearch={searchText => {
-            console.log(searchText);
-            // Call your search API here and update the items prop
-          }}
-          items={customerDDL}
+          items={customerOptions}
           rules={{ required: 'কাস্টমার নির্বাচন করুন' }}
-          error={errors.customerId}
-          enableSearch={true}
+          error={errors.customer as any}
+          enableSearch
+          onSelected={onCustomerSelect}
         />
 
-        {/* 🔹 Employee */}
-        {/* <CustomDropdown
-          label="কর্মচারী"
-          name="employeeId"
-          control={control}
-          items={[
-            { label: 'এমপ্লয়ি ১', value: 'emp1' },
-            { label: 'এমপ্লয়ি ২', value: 'emp2' },
-          ]}
-          rules={{ required: 'কর্মচারী নির্বাচন করুন' }}
-          error={errors.employeeId}
-        /> */}
-
-        {/* 🔹 Date */}
+        {/* Date */}
         <CustomDatePicker
           label="তারিখ"
           name="date"
@@ -138,25 +219,23 @@ const CreateSaleScreen: React.FC = () => {
           errorStyle={{ color: Colors.error }}
         />
 
-        {/* 🔹 Product Name (disabled) */}
+        {/* Product & UOM */}
         <CustomInput
           label="পণ্যের নাম"
-          control={control}
           name="productName"
+          control={control}
           disabled
           error={errors.productName}
         />
-
-        {/* 🔹 UOM (disabled) */}
         <CustomInput
           label="একক (UOM)"
-          control={control}
           name="uom"
+          control={control}
           disabled
           error={errors.uom}
         />
 
-        {/* 🔹 Price & Quantity */}
+        {/* Price & Quantity */}
         <View style={styles.row}>
           <View style={styles.halfInput}>
             <CustomInput
@@ -180,24 +259,28 @@ const CreateSaleScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 🔹 Paid Amount */}
+        {/* Paid Amount */}
         <CustomInput
           label="প্রদত্ত টাকা"
           control={control}
           name="paidAmount"
           keyboardType="numeric"
+          rules={{
+            required: 'প্রদত্ত টাকা আবশ্যক',
+            // validate: val =>
+            //   +val <= +(watch('totalPrice') || 0) ||
+            //   'প্রদত্ত টাকা মোট দামের চেয়ে বেশি হতে পারবে না',
+          }}
           error={errors.paidAmount}
         />
 
-        {/* 🔹 Total Price (disabled) */}
+        {/* Total & Due */}
         <CustomInput
           label="মোট দাম"
           control={control}
           name="totalPrice"
           disabled
         />
-
-        {/* 🔹 Due Amount (disabled) */}
         <CustomInput
           label="বাকি টাকা"
           control={control}
@@ -205,7 +288,7 @@ const CreateSaleScreen: React.FC = () => {
           disabled
         />
 
-        {/* 🔹 Notes */}
+        {/* Notes */}
         <CustomInput
           label="নোট"
           control={control}
@@ -214,8 +297,30 @@ const CreateSaleScreen: React.FC = () => {
           placeholder="অতিরিক্ত নোট লিখুন"
         />
 
+        {/* Customer Due Information */}
+        <View style={styles.row}>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="আগের বাকি"
+              control={control}
+              name="previousDue"
+              disabled
+            />
+          </View>
+          <View style={styles.halfInput}>
+            <CustomInput
+              label="বাকি সীমা"
+              control={control}
+              name="dueLimit"
+              disabled
+            />
+          </View>
+        </View>
+
+        {/* Submit */}
         <CustomButton
           loading={loading}
+          disabled={isSubmitDisabled}
           title="সাবমিট করুন"
           onPress={handleSubmit(onSubmit)}
           style={styles.submitButton}

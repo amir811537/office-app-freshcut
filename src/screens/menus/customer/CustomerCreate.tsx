@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { showMessage } from 'react-native-flash-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { goBack } from '../../../utils/navigationRef';
-
 import CustomButton from '../../../components/CustomButton';
 import CustomDropdown from '../../../components/CustomDropdown';
 import CustomHeader from '../../../components/CustomHeader';
@@ -24,7 +23,10 @@ type CustomerForm = {
   email?: string;
   phone: string;
   address?: string;
-  customerType: string;
+  customerType: {
+    value: any;
+    label: any;
+  };
   defaultProductName: string;
   defaultUOM: string;
   defaultPrice: string;
@@ -49,7 +51,10 @@ const CustomerCreate: React.FC = () => {
       email: '',
       phone: '',
       address: '',
-      customerType: 'Regular',
+      customerType: {
+        value: 'Regular',
+        label: 'Regular',
+      },
       defaultProductName: 'Boiler',
       defaultUOM: 'kg',
       defaultPrice: '',
@@ -103,7 +108,7 @@ const CustomerCreate: React.FC = () => {
       email: data.email,
       phone: data.phone,
       address: data.address,
-      customerType: data.customerType,
+      customerType: data.customerType?.label,
       defaultProductName: data.defaultProductName,
       defaultUOM: data.defaultUOM,
       defaultPrice: +data.defaultPrice || 0,

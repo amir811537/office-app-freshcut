@@ -28,12 +28,14 @@ export const createCustomer = async (
   payload: CustomerPayload,
   setIsLoading?: (loading: boolean) => void,
 ): Promise<ApiResponse<any> | null> => {
+  console.log(JSON.stringify(payload, null, 2));
   try {
     setIsLoading?.(true);
     const res = await axiosClient.post<ApiResponse<any>>(
       endpoints.customers,
       payload,
     );
+
     return res.data;
   } catch (error: any) {
     return error?.response?.data || null;

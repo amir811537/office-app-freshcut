@@ -35,7 +35,7 @@ interface CustomDropdownProps {
   dropdownTextStyle?: TextStyle;
   errorStyle?: TextStyle;
   error?: FieldError | undefined;
-  onSelected?: (item: DropdownItem) => void;
+  onSelected?: (item: any) => void;
   disabled?: boolean;
   // New props for search functionality
   onSearch?: (searchText: string) => void;
@@ -93,13 +93,14 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         name={name}
         rules={rules}
         render={({ field: { onChange, value } }) => {
+          // Handle both object and primitive values
           const selectedItem =
-            typeof value === 'object' && value !== null
+            value && typeof value === 'object' && 'label' in value
               ? value
               : items.find(item => item.value === value);
 
           const handleSelect = (item: DropdownItem) => {
-            onChange(item);
+            onChange(item); // Pass the entire item object
             setVisible(false);
             onSelected?.(item);
           };

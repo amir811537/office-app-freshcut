@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   FlatList,
   TouchableOpacity,
-  ScrollView,
   Dimensions,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
@@ -16,11 +17,32 @@ import dayjs from 'dayjs';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import { useForm, Control } from 'react-hook-form';
 import { goBack, navigate } from '../../utils/navigationRef';
+import {
+  getAllSales,
+  GetSalesParams,
+  deleteSale,
+} from '../../services/salesService';
+import { showMessage } from 'react-native-flash-message';
+import CustomLoader from '../../components/CustomLoader';
 
 const { width } = Dimensions.get('window');
+const CARD_MARGIN = 12;
+
+interface SaleItem {
+  _id: string;
+  customer: { name: string; phone?: string };
+  employee: { fullName: string; employeeCode?: string };
+  productName: string;
+  quantity: number;
+  totalAmount: number;
+  paidAmount: number;
+  status: 'paid' | 'partial' | 'unpaid';
+  date: string;
+  notes?: string;
+}
 
 const BikroyReportMainIndex = () => {
-  const { control, watch } = useForm({
+  const { control, watch, setValue } = useForm({
     defaultValues: {
       fromDate: dayjs().startOf('month').toDate(),
       toDate: dayjs().endOf('month').toDate(),
@@ -30,77 +52,124 @@ const BikroyReportMainIndex = () => {
   const fromDate = watch('fromDate');
   const toDate = watch('toDate');
 
-  const [recentSales, setRecentSales] = useState([
-    {
-      _id: '1',
-      customer: { name: 'গ্রাহক A' },
-      employee: { fullName: 'কর্মকর্তা X' },
-      productName: 'চিকেন ৫ কেজি',
-      quantity: 5,
-      totalAmount: 5000,
-      status: 'paid',
-      date: new Date(),
-    },
-    {
-      _id: '2',
-      customer: { name: 'গ্রাহক B' },
-      employee: { fullName: 'কর্মকর্তা Y' },
-      productName: 'ডিম ৩০ পিস',
-      quantity: 30,
-      totalAmount: 3000,
-      status: 'partial',
-      date: new Date(),
-    },
-  ]);
+  const [sales, setSales] = useState<SaleItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // 🔹 Fetch sales data
+  const fetchSales = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const params: GetSalesParams = {
+        limit: 100, // Show 100 records by default
+        startDate: dayjs(fromDate).startOf('day').toISOString(),
+        endDate: dayjs(toDate).endOf('day').toISOString(),
+      };
+
+      const response = await getAllSales(params, setLoading);
+
+      if (response?.success) {
+        setSales(response.data.sales || []);
+      } else {
+        showMessage({
+          message: response?.message || 'Failed to fetch sales data',
+          type: 'danger',
+        });
+      }
+    } catch (error) {
+      showMessage({
+        message: 'Failed to fetch sales data',
+        type: 'danger',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [fromDate, toDate]);
+
+  // 🔹 Load initial data
+  useEffect(() => {
+    fetchSales();
+  }, []);
+
+  // 🔹 Handle delete with confirmation
+  const handleDelete = async (id: string, customerName: string) => {
+    Alert.alert(
+      'বিক্রয় মুছুন',
+      `আপনি কি নিশ্চিত যে আপনি ${customerName}-এর বিক্রয়টি মুছতে চান?`,
+      [
+        {
+          text: 'বাতিল',
+          style: 'cancel',
+        },
+        {
+          text: 'মুছুন',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingId(id);
+              const response = await deleteSale(id, () => {});
+
+              if (response?.success) {
+                showMessage({
+                  message: 'বিক্রয় সফলভাবে মুছে ফেলা হয়েছে',
+                  type: 'success',
+                });
+                // Remove the deleted item from the list
+                setSales(prev => prev.filter(item => item._id !== id));
+              } else {
+                showMessage({
+                  message:
+                    response?.message || 'বিক্রয় মুছে ফেলতে ব্যর্থ হয়েছে',
+                  type: 'danger',
+                });
+              }
+            } catch (error) {
+              showMessage({
+                message: 'বিক্রয় মুছে ফেলতে ব্যর্থ হয়েছে',
+                type: 'danger',
+              });
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   // 🔹 Status Style Helper
-  const getStatusStyle = (status: string) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case 'paid':
-        return { style: styles.statusPaid, text: 'পরিশোধিত' };
+        return 'পরিশোধিত';
       case 'partial':
-        return { style: styles.statusPartial, text: 'আংশিক' };
+        return 'আংশিক';
       default:
-        return { style: styles.statusDue, text: 'বাকি' };
+        return 'বাকি';
     }
   };
 
-  // 🔹 Edit Handler
-  const handleEdit = (item: any) => {
-    console.log('Editing item:', item);
-    // You can navigate to edit screen or open a modal here
-  };
-
-  // 🔹 Delete Handler
-  const handleDelete = (id: string) => {
-    console.log('Deleting item with ID:', id);
-    // Example: setRecentSales((prev) => prev.filter((s) => s._id !== id));
+  const handleEdit = (item: SaleItem) => {
+    navigate('BikroyReportEdit', { saleId: item._id });
   };
 
   const onViewPress = () => {
-    console.log('View data from', fromDate, 'to', toDate);
-    // Later this will fetch filtered data from API
+    fetchSales();
   };
 
-  // 🔹 Render Single Sale Card
-  // 🔹 Render Single Sale Card
-  // 🔹 Render Single Sale Card
-  const renderSaleItem = ({ item }: any) => {
-    const { style, text } = getStatusStyle(item.status);
-
+  // 🔹 Render Single Sale Card (Customer card design)
+  const renderSaleItem = ({ item }: { item: SaleItem }) => {
     const paidAmount = item.paidAmount ?? 0;
     const dueAmount = Math.max(item.totalAmount - paidAmount, 0);
     const extraAmount =
       paidAmount > item.totalAmount ? paidAmount - item.totalAmount : 0;
 
     return (
-      <View style={styles.saleCard}>
-        <View style={styles.saleHeader}>
-          <Text style={styles.saleCustomer}>{item.customer.name}</Text>
-          <View style={styles.statusRow}>
-            <View style={[styles.statusBadge, style]}>
-              <Text style={styles.statusText}>{text}</Text>
-            </View>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.name}>{item.customer.name}</Text>
+          <View style={styles.iconRow}>
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => handleEdit(item)}
@@ -109,37 +178,59 @@ const BikroyReportMainIndex = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.iconButton}
-              onPress={() => handleDelete(item._id)}
+              onPress={() => handleDelete(item._id, item.customer.name)}
+              disabled={deletingId === item._id}
             >
-              <Icon name="trash-outline" size={20} color={Colors.error} />
+              {deletingId === item._id ? (
+                <ActivityIndicator size="small" color={Colors.error} />
+              ) : (
+                <Icon name="trash-outline" size={20} color={Colors.error} />
+              )}
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={styles.saleProduct}>
-          {item.productName} × {item.quantity} ={' '}
+        <Text style={styles.product}>
+          🛒 {item.productName} × {item.quantity}={' '}
           {item.totalAmount.toLocaleString()} টাকা
         </Text>
 
-        <Text style={styles.saleAmount}>
+        <Text style={styles.amount}>
           জমা: {paidAmount.toLocaleString()} টাকা
         </Text>
 
         {dueAmount > 0 && (
-          <Text style={[styles.saleAmount, { color: Colors.error }]}>
+          <Text style={[styles.amount, { color: Colors.error }]}>
             বাকি: {dueAmount.toLocaleString()} টাকা
           </Text>
         )}
 
         {extraAmount > 0 && (
-          <Text style={[styles.saleAmount, { color: Colors.greenFresh }]}>
+          <Text style={[styles.amount, { color: Colors.greenFresh }]}>
             অতিরিক্ত জমা: {extraAmount.toLocaleString()} টাকা
           </Text>
         )}
 
-        <Text style={styles.saleDate}>
-          {dayjs(item.date).format('DD/MM/YYYY')}
-        </Text>
+        <View style={styles.footerRow}>
+          <Text style={styles.date}>
+            📅 {dayjs(item.date).format('DD/MM/YYYY')}
+          </Text>
+          <Text
+            style={[
+              styles.status,
+              {
+                color:
+                  item.status === 'paid'
+                    ? Colors.greenFresh
+                    : item.status === 'partial'
+                    ? Colors.orangeAccent
+                    : Colors.error,
+              },
+            ]}
+          >
+            {getStatusText(item.status)}
+          </Text>
+        </View>
       </View>
     );
   };
@@ -153,7 +244,7 @@ const BikroyReportMainIndex = () => {
       />
 
       <View style={styles.container}>
-        {/* 🔹 Filters */}
+        {/* Filters */}
         <View style={styles.filtersContainer}>
           <CustomDatePicker
             name="fromDate"
@@ -172,17 +263,29 @@ const BikroyReportMainIndex = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 🔹 Sales List */}
+        {/* Sales List */}
         <Text style={styles.sectionTitle}>সাম্প্রতিক বিক্রি</Text>
         <FlatList
-          data={recentSales}
+          data={sales}
           keyExtractor={item => item._id}
           renderItem={renderSaleItem}
           contentContainerStyle={styles.salesList}
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  কোন বিক্রয় তথ্য পাওয়া যায়নি
+                </Text>
+              </View>
+            ) : null
+          }
         />
       </View>
 
-      {/* 🔹 Floating Add Button */}
+      {/* Custom Loader */}
+      <CustomLoader loading={loading} />
+
+      {/* Floating Add Button */}
       <TouchableOpacity
         onPress={() => navigate('BikroyReportCreate')}
         style={styles.fab}
@@ -230,83 +333,73 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.black,
+    color: Colors.text,
     marginBottom: 8,
   },
   salesList: {
     paddingBottom: 100,
   },
-  saleCard: {
-    backgroundColor: Colors.card,
+  card: {
+    backgroundColor: Colors.surfaceLight,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 14,
-    elevation: 3,
+    marginBottom: CARD_MARGIN,
     shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  saleHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 6,
-    alignItems: 'center',
   },
-  saleCustomer: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.black,
-  },
-  statusRow: {
+  iconRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  statusPaid: {
-    backgroundColor: Colors.greenFresh,
-  },
-  statusPartial: {
-    backgroundColor: Colors.orangeAccent,
-  },
-  statusDue: {
-    backgroundColor: Colors.error,
-  },
-  statusText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: '600',
   },
   iconButton: {
-    marginLeft: 4,
+    marginLeft: 8,
     padding: 6,
     borderRadius: 6,
     backgroundColor: Colors.white,
-    elevation: 2,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    elevation: 2,
   },
-  saleProduct: {
+  name: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  product: {
     fontSize: 14,
+    color: Colors.lightText,
+    marginBottom: 2,
+  },
+  amount: {
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.text,
     marginBottom: 2,
   },
-  saleAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.black,
-    marginBottom: 2,
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
   },
-  saleDate: {
+  date: {
     fontSize: 12,
     color: Colors.lightText,
+  },
+  status: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   fab: {
     position: 'absolute',
@@ -323,5 +416,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.lightText,
+    textAlign: 'center',
   },
 });
