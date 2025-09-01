@@ -4,6 +4,8 @@ const endpoints = {
   logout: '/api/v1/users/auth/logout',
   customers: '/api/v1/customers',
   sales: '/api/v1/sales',
+  profile: '/api/v1/users/me',
+  refresh: '/api/v1/users/auth/refresh',
 };
 
 export default endpoints;

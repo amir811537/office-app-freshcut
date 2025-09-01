@@ -68,6 +68,7 @@ const BikroyReportMainIndex = () => {
       };
 
       const response = await getAllSales(params, setLoading);
+      console.log(JSON.stringify(response, null, 2));
 
       if (response?.success) {
         setSales(response.data.sales || []);
@@ -191,7 +192,7 @@ const BikroyReportMainIndex = () => {
         </View>
 
         <Text style={styles.product}>
-          🛒 {item.productName} × {item.quantity}={' '}
+          🛒 {item.productName}({item?.price}) × {item.quantity}={' '}
           {item.totalAmount.toLocaleString()} টাকা
         </Text>
 

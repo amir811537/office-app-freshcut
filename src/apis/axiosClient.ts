@@ -4,14 +4,10 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 import { getData, StorageKeys } from '../utils/storage';
-
-console.log(process.env.NODE_ENV);
-
+import { resetAndNavigate } from '../utils/navigationRef';
+// http://192.168.2.254:5000
 // 🔹 Set baseURL based on environment
-const BASE_URL =
-  process.env.NODE_ENV === 'development'
-    ? 'http://192.168.2.254:5000'
-    : 'https://fresh-cut-backend.vercel.app';
+const BASE_URL = 'https://fresh-cut-backend.vercel.app';
 
 // Create Axios instance
 const axiosClient: AxiosInstance = axios.create({
@@ -53,7 +49,7 @@ axiosClient.interceptors.response.use(
       console.warn('Unauthorized — token may have expired');
 
       try {
-        // Optional token refresh logic here
+        resetAndNavigate('LoginScreen');
       } catch (refreshError) {
         console.error('Error refreshing token', refreshError);
       }

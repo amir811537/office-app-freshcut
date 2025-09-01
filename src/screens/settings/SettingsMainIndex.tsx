@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
@@ -7,47 +7,60 @@ import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 import { navigate, resetAndNavigate } from '../../utils/navigationRef';
 import { logoutUser } from '../../services/loginService';
+import { profileInfo } from '../../services/loginService'; // <-- import
 import { showMessage } from 'react-native-flash-message';
 import { useUserStore } from '../../store/userStore';
+import CustomLoader from '../../components/CustomLoader';
 
 const SettingsMainIndex = () => {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [profile, setProfile] = useState<any>(null); // store real user data
   const { clearAuth } = useUserStore();
-  const user = {
-    fullName: 'মোঃ আমীর হোসেন',
-    role: 'employee',
-    email: 'amir@example.com',
-    phone: '017xxxxxxxx',
-    employeeCode: 'EMP12345',
-    userName: 'amir123',
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const res = await profileInfo(setIsLoading);
+      if (res?.statusCode === 200 && res?.data) {
+        setProfile(res.data);
+      } else {
+        showMessage({
+          message: 'প্রোফাইল লোড করতে সমস্যা হয়েছে!',
+          type: 'danger',
+        });
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleLogout = async () => {
+    const res = await logoutUser(setIsLoading);
+
+    if (res?.statusCode === 200) {
+      clearAuth();
+      showMessage({
+        message: res?.message || 'লগ আউট সফল হয়েছে!',
+        description: 'আপনি সাফল্যের সাথে লগ আউট করেছেন।',
+        type: 'success',
+        duration: 1000,
+        onHide: () => resetAndNavigate('LoginScreen'), // Navigate to login
+      });
+    } else {
+      showMessage({
+        message: 'লগ আউট ব্যর্থ হয়েছে!',
+        description:
+          res?.message || 'কিছু ভুল হয়েছে, দয়া করে আবার চেষ্টা করুন।',
+        type: 'danger',
+        duration: 3000,
+      });
+    }
   };
 
-const handleLogout = async () => {
-  const res = await logoutUser(setIsLoading);
-
-  if (res?.statusCode === 200) {
-    clearAuth();
-    showMessage({
-      message: res?.message || 'লগ আউট সফল হয়েছে!',
-      description: 'আপনি সাফল্যের সাথে লগ আউট করেছেন।',
-      type: 'success',
-      duration: 1000,
-      onHide: () => resetAndNavigate('LoginScreen'), // Navigate to login
-    });
-  } else {
-    showMessage({
-      message: 'লগ আউট ব্যর্থ হয়েছে!',
-      description: res?.message || 'কিছু ভুল হয়েছে, দয়া করে আবার চেষ্টা করুন।',
-      type: 'danger',
-      duration: 3000,
-    });
-  }
-};
-
+  if (!profile) return null; // or a loading spinner
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader title="প্রোফাইল" />
+      <CustomLoader loading={isLoading} />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -55,25 +68,25 @@ const handleLogout = async () => {
       >
         {/* User Info Card */}
         <View style={styles.userCard}>
-          <Text style={styles.userName}>{user.fullName}</Text>
+          <Text style={styles.userName}>{profile.fullName}</Text>
           <Text style={styles.userRole}>
-            {user.role === 'admin' ? 'অ্যাডমিন' : 'কর্মচারী'}
+            {profile.role === 'admin' ? 'অ্যাডমিন' : 'কর্মচারী'}
           </Text>
         </View>
 
         {/* Info Card */}
         <View style={styles.infoCard}>
-          <InfoRow icon="mail-outline" label="ইমেইল" value={user.email} />
-          <InfoRow icon="call-outline" label="ফোন" value={user.phone} />
+          <InfoRow icon="mail-outline" label="ইমেইল" value={profile.email} />
+          <InfoRow icon="call-outline" label="ফোন" value={profile.phone} />
           <InfoRow
             icon="card-outline"
             label="কর্মচারী কোড"
-            value={user.employeeCode}
+            value={profile.employeeCode}
           />
           <InfoRow
             icon="person-outline"
             label="ইউজারনেম"
-            value={user.userName}
+            value={profile.userName}
           />
         </View>
 
@@ -81,7 +94,14 @@ const handleLogout = async () => {
         <View style={styles.actionsContainer}>
           <CustomButton
             title="পাসওয়ার্ড পরিবর্তন করুন"
-            onPress={() => navigate('ChangePassword')}
+            onPress={() =>
+              showMessage({
+                message: 'Password change coming soon!',
+                type: 'info',
+                floating: true,
+                icon: 'info',
+              })
+            }
             type="primary"
             style={styles.actionButton}
             textStyle={{ fontSize: 16 }}
@@ -90,8 +110,8 @@ const handleLogout = async () => {
           </CustomButton>
 
           <CustomButton
-          loading={isLoading}
-          disabled={isLoading}
+            loading={isLoading}
+            disabled={isLoading}
             title="লগ আউট"
             onPress={() => handleLogout()}
             type="secondary"
@@ -106,6 +126,7 @@ const handleLogout = async () => {
   );
 };
 
+// InfoRow component remains the same
 const InfoRow = ({
   icon,
   label,
@@ -129,10 +150,7 @@ const InfoRow = ({
 export default SettingsMainIndex;
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 30,
-  },
+  container: { padding: 16, paddingBottom: 30 },
   userCard: {
     backgroundColor: Colors.card,
     borderRadius: 16,
@@ -146,16 +164,8 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-  userName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  userRole: {
-    fontSize: 14,
-    color: Colors.lightText,
-    marginTop: 4,
-  },
+  userName: { fontSize: 22, fontWeight: '700', color: Colors.text },
+  userRole: { fontSize: 14, color: Colors.lightText, marginTop: 4 },
   infoCard: {
     backgroundColor: Colors.surfaceLight,
     borderRadius: 16,
@@ -174,26 +184,14 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.divider,
     borderBottomWidth: 1,
   },
-  iconContainer: {
-    width: 30,
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: Colors.lightText,
-  },
+  iconContainer: { width: 30, alignItems: 'center', marginRight: 12 },
+  infoLabel: { fontSize: 14, color: Colors.lightText },
   infoValue: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text,
     marginTop: 2,
   },
-  actionsContainer: {
-    flexDirection: 'column',
-    gap: 12,
-  },
-  actionButton: {
-    justifyContent: 'center',
-  },
+  actionsContainer: { flexDirection: 'column', gap: 12 },
+  actionButton: { justifyContent: 'center' },
 });

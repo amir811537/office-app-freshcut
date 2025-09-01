@@ -267,9 +267,16 @@ const CreateSaleScreen: React.FC = () => {
           keyboardType="numeric"
           rules={{
             required: 'প্রদত্ত টাকা আবশ্যক',
-            // validate: val =>
-            //   +val <= +(watch('totalPrice') || 0) ||
-            //   'প্রদত্ত টাকা মোট দামের চেয়ে বেশি হতে পারবে না',
+            validate: val => {
+              const prevDue = parseFloat(watch('previousDue') || '0');
+              const total = parseFloat(watch('totalPrice') || '0');
+              const paid = parseFloat(val || '0');
+
+              if (prevDue === 0 && paid > total) {
+                return 'আগের বাকি নেই, প্রদত্ত টাকা মোট দামের চেয়ে বেশি হতে পারবে না';
+              }
+              return true;
+            },
           }}
           error={errors.paidAmount}
         />
