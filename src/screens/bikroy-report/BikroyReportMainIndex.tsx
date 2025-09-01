@@ -152,7 +152,14 @@ const BikroyReportMainIndex = () => {
   };
 
   const handleEdit = (item: SaleItem) => {
-    navigate('BikroyReportEdit', { saleId: item._id });
+    showMessage({
+      message: 'শীঘ্রই আসছে',
+      type: 'info',
+      icon: 'info',
+      duration: 2000,
+      floating: true,
+    });
+    // navigate('BikroyReportEdit', { saleId: item._id });
   };
 
   const onViewPress = () => {
