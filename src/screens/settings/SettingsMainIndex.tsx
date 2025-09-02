@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
-import WrapperContainer from '../../components/WrapperContainer';
-import CustomHeader from '../../components/CustomHeader';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { Colors } from '../../constants/colors';
-import CustomButton from '../../components/CustomButton';
-import { navigate, resetAndNavigate } from '../../utils/navigationRef';
-import { logoutUser } from '../../services/loginService';
-import { profileInfo } from '../../services/loginService'; // <-- import
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
-import { useUserStore } from '../../store/userStore';
+import Icon from 'react-native-vector-icons/Ionicons';
+import CustomButton from '../../components/CustomButton';
+import CustomHeader from '../../components/CustomHeader';
 import CustomLoader from '../../components/CustomLoader';
+import WrapperContainer from '../../components/WrapperContainer';
+import { Colors } from '../../constants/colors';
+import { logoutUser, profileInfo } from '../../services/loginService';
+import { useUserStore } from '../../store/userStore';
+import { resetAndNavigate } from '../../utils/navigationRef';
 
 const SettingsMainIndex = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -55,8 +54,6 @@ const SettingsMainIndex = () => {
     }
   };
 
-  if (!profile) return null; // or a loading spinner
-
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
       <CustomHeader title="প্রোফাইল" />
@@ -68,25 +65,29 @@ const SettingsMainIndex = () => {
       >
         {/* User Info Card */}
         <View style={styles.userCard}>
-          <Text style={styles.userName}>{profile.fullName}</Text>
+          <Text style={styles.userName}>{profile?.fullName || '---'}</Text>
           <Text style={styles.userRole}>
-            {profile.role === 'admin' ? 'অ্যাডমিন' : 'কর্মচারী'}
+            {profile?.role === 'admin'
+              ? 'অ্যাডমিন'
+              : profile?.role
+              ? 'কর্মচারী'
+              : '---'}
           </Text>
         </View>
 
         {/* Info Card */}
         <View style={styles.infoCard}>
-          <InfoRow icon="mail-outline" label="ইমেইল" value={profile.email} />
-          <InfoRow icon="call-outline" label="ফোন" value={profile.phone} />
+          <InfoRow icon="mail-outline" label="ইমেইল" value={profile?.email} />
+          <InfoRow icon="call-outline" label="ফোন" value={profile?.phone} />
           <InfoRow
             icon="card-outline"
             label="কর্মচারী কোড"
-            value={profile.employeeCode}
+            value={profile?.employeeCode}
           />
           <InfoRow
             icon="person-outline"
             label="ইউজারনেম"
-            value={profile.userName}
+            value={profile?.userName}
           />
         </View>
 
@@ -126,7 +127,7 @@ const SettingsMainIndex = () => {
   );
 };
 
-// InfoRow component remains the same
+// InfoRow component with safe optional chaining
 const InfoRow = ({
   icon,
   label,
@@ -134,7 +135,7 @@ const InfoRow = ({
 }: {
   icon: string;
   label: string;
-  value: string;
+  value?: string | null;
 }) => (
   <View style={styles.infoRow}>
     <View style={styles.iconContainer}>
@@ -142,7 +143,7 @@ const InfoRow = ({
     </View>
     <View style={{ flex: 1 }}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+      <Text style={styles.infoValue}>{value || '---'}</Text>
     </View>
   </View>
 );

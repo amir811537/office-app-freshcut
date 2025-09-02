@@ -33,7 +33,7 @@ const HomeMainIndex = () => {
         { startDate: firstDay, endDate: lastDay },
         setLoading,
       );
-      console.log('response is ', JSON.stringify(res, null, 2));
+
       if (res?.statusCode === 200) setSummary(res.data);
     } catch (error) {
       console.error('Error fetching sales summary:', error);

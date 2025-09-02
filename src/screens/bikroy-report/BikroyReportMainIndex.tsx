@@ -68,7 +68,6 @@ const BikroyReportMainIndex = () => {
       };
 
       const response = await getAllSales(params, setLoading);
-      console.log(JSON.stringify(response, null, 2));
 
       if (response?.success) {
         setSales(response.data.sales || []);
