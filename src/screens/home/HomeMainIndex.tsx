@@ -99,7 +99,7 @@ const HomeMainIndex = () => {
             </Text>
           </CustomCard>
 
-          <CustomCard
+          {/* <CustomCard
             style={[
               styles.overviewCard,
               { backgroundColor: Colors.greenFresh },
@@ -128,7 +128,7 @@ const HomeMainIndex = () => {
             />
             <Text style={styles.overviewTitle}>মোট বাকি</Text>
             <Text style={styles.overviewValue}>৳ {overview.totalDue ?? 0}</Text>
-          </CustomCard>
+          </CustomCard> */}
         </View>
 
         {/* Recent Sales */}
