@@ -266,21 +266,21 @@ const BikroyReportMainIndex = () => {
         </View>
 
         <Text style={styles.product}>
-          🛒 {item.productName}({item?.price}) × {item.quantity}={' '}
-          {item.totalAmount.toLocaleString()} টাকা
+          🛒 {item?.productName}({item?.price}) × {item.quantity}={' '}
+          {item?.totalAmount?.toLocaleString()} টাকা
         </Text>
 
         <Text style={styles.amount}>
-          জমা: {paidAmount.toLocaleString()} টাকা
+          জমা: {paidAmount?.toLocaleString()} টাকা
         </Text>
 
         {dueAmount > 0 && (
           <Text style={[styles.amount, { color: Colors.orangeAccent }]}>
-            আজকের বাকি:: {dueAmount.toLocaleString()} টাকা
+            আজকের বাকি:: {dueAmount?.toLocaleString()} টাকা
           </Text>
         )}
         <Text style={[styles.amount, { color: Colors.error }]}>
-          আগের বাকি: {item?.customer?.previousDue.toLocaleString()} টাকা
+          আগের বাকি: {item?.customer?.previousDue?.toLocaleString()} টাকা
         </Text>
         {/* {extraAmount > 0 && (
           <Text style={[styles.amount, { color: Colors.greenFresh }]}>
