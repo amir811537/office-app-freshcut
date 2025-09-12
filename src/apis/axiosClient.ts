@@ -7,9 +7,10 @@ import { getData, StorageKeys } from '../utils/storage';
 import { resetAndNavigate } from '../utils/navigationRef';
 // http://192.168.2.254:5000
 // 🔹 Set baseURL based on environment
-// const BASE_URL = 'https://fresh-cut-backend.vercel.app';
 
-const BASE_URL = 'http://192.168.0.102:8000';
+const BASE_URL = 'https://fresh-cut-backend.vercel.app';
+
+// const BASE_URL = 'http://192.168.0.102:8000';
 
 // Create Axios instance
 const axiosClient: AxiosInstance = axios.create({
