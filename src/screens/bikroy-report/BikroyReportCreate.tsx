@@ -42,12 +42,16 @@ interface FormValues {
   previousDue?: string; // Add previous due to form
   dueLimit?: string; // Add due limit to form
   notes?: string;
+  numOfPcs?: string; // Optional field for number of pieces
 }
-
+interface CreateSaleScreenProps {
+  route?: { params?: { saleId?: string } };
+}
 const CreateSaleScreen: React.FC = () => {
   const { auth } = useUserStore();
   const [loading, setLoading] = useState(false);
   const [customerOptions, setCustomerOptions] = useState<Customer[]>([]);
+  
 
   const {
     control,
@@ -69,6 +73,7 @@ const CreateSaleScreen: React.FC = () => {
       previousDue: '',
       dueLimit: '',
       notes: '',
+      numOfPcs: '',
     },
   });
 
@@ -138,10 +143,14 @@ const CreateSaleScreen: React.FC = () => {
         price: +data.price,
         paidAmount: +data.paidAmount,
         notes: data.notes || '',
+        numOfPcs: data?.numOfPcs ? +data?.numOfPcs : 0,
+        
       };
 
       const result = await createSale(payload, setLoading);
-      console.log('result ', JSON.stringify(result, null, 2));
+
+
+  
 
       if (result?.statusCode == 201) {
         showMessage({
@@ -249,7 +258,7 @@ const CreateSaleScreen: React.FC = () => {
           </View>
           <View style={styles.halfInput}>
             <CustomInput
-              label="পরিমাণ"
+              label="পরিমাণ (কেজি)"
               control={control}
               name="quantity"
               keyboardType="numeric"
@@ -259,27 +268,45 @@ const CreateSaleScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Paid Amount */}
-        <CustomInput
-          label="প্রদত্ত টাকা"
-          control={control}
-          name="paidAmount"
-          keyboardType="numeric"
-          rules={{
-            required: 'প্রদত্ত টাকা আবশ্যক',
-            validate: val => {
-              const prevDue = parseFloat(watch('previousDue') || '0');
-              const total = parseFloat(watch('totalPrice') || '0');
-              const paid = parseFloat(val || '0');
+        <View style={styles.row}>
+          <View style={styles.halfInput}>
+         
+            <CustomInput
+              label="প্রদত্ত টাকা"
+              control={control}
+              name="paidAmount"
+              keyboardType="numeric"
+              rules={{
+                required: 'প্রদত্ত টাকা আবশ্যক',
+                validate: val => {
+                  const prevDue = parseFloat(watch('previousDue') || '0');
+                  const total = parseFloat(watch('totalPrice') || '0');
+                  const paid = parseFloat(val || '0');
 
-              if (prevDue === 0 && paid > total) {
-                return 'আগের বাকি নেই, প্রদত্ত টাকা মোট দামের চেয়ে বেশি হতে পারবে না';
-              }
-              return true;
-            },
-          }}
-          error={errors.paidAmount}
-        />
+                  if (prevDue === 0 && paid > total) {
+                    return 'আগের বাকি নেই, প্রদত্ত টাকা মোট দামের চেয়ে বেশি হতে পারবে না';
+                  }
+                  return true;
+                },
+              }}
+              error={errors.paidAmount}
+            />
+          </View>
+
+          <View style={styles.halfInput}>
+            {/* Paid Amount */}
+            <CustomInput
+              label="পিস সংখ্যা"
+              control={control}
+              name="numOfPcs"
+              keyboardType="numeric"
+              rules={{
+                required: 'পিস সংখ্যা আবশ্যক', 
+              }}
+              error={errors.numOfPcs}
+            />
+          </View>
+        </View>
 
         {/* Total & Due */}
         <CustomInput

@@ -27,14 +27,18 @@ const HomeMainIndex = () => {
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const firstDay = dayjs().startOf('month').format('YYYY-MM-DD');
-      const lastDay = dayjs().endOf('month').format('YYYY-MM-DD');
+      const today = dayjs().format('YYYY-MM-DD');
+
       const res = await getSalesSummary(
-        { startDate: firstDay, endDate: lastDay },
+        { startDate: today, endDate: today },
         setLoading,
       );
 
-      if (res?.statusCode === 200) setSummary(res.data);
+      console.log('response from sales summary:', JSON.stringify(res,null,2));
+
+      if (res?.statusCode === 200) {
+        setSummary(res?.data);
+      }
     } catch (error) {
       console.error('Error fetching sales summary:', error);
     } finally {
@@ -46,18 +50,15 @@ const HomeMainIndex = () => {
     return (
       <WrapperContainer style={{ backgroundColor: Colors.background }}>
         <CustomHeader title="ড্যাশবোর্ড" />
-        <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-        >
+        <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.theme} />
         </View>
       </WrapperContainer>
     );
   }
 
-  const overview = summary?.overview || {};
-  const recentSales = summary?.recentSales || [];
-  const topProducts = summary?.topProducts || [];
+  const overview = summary?.overview ?? {};
+  const recentSales = summary?.recentSales ?? [];
 
   return (
     <WrapperContainer style={{ backgroundColor: Colors.background }}>
@@ -68,82 +69,46 @@ const HomeMainIndex = () => {
       >
         {/* Overview Cards */}
         <View style={styles.overviewContainer}>
-          <CustomCard
-            style={[
-              styles.overviewCard,
-              { backgroundColor: Colors.orangeAccent },
-            ]}
-          >
-            <Icon
-              name="cart-outline"
-              size={28}
-              color={Colors.white}
-              style={styles.icon}
-            />
-            <Text style={styles.overviewTitle}>মোট বিক্রয়</Text>
-            <Text style={styles.overviewValue}>{overview.totalSales ?? 0}</Text>
-          </CustomCard>
-
-          <CustomCard
-            style={[styles.overviewCard, { backgroundColor: Colors.theme }]}
-          >
-            <Icon
-              name="cash-outline"
-              size={28}
-              color={Colors.white}
-              style={styles.icon}
-            />
-            <Text style={styles.overviewTitle}>মোট রাজস্ব</Text>
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.orangeAccent }]}>
+            <Icon name="barbell-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট বিক্রয় (কেজি)</Text>
             <Text style={styles.overviewValue}>
-              ৳ {overview.totalRevenue ?? 0}
+              {overview?.totalQuantity ?? 0} kg
             </Text>
           </CustomCard>
 
-          {/* <CustomCard
-            style={[
-              styles.overviewCard,
-              { backgroundColor: Colors.greenFresh },
-            ]}
-          >
-            <Icon
-              name="wallet-outline"
-              size={28}
-              color={Colors.white}
-              style={styles.icon}
-            />
-            <Text style={styles.overviewTitle}>মোট আদায়</Text>
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.fbColor }]}>
+            <Icon name="cube-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট পিস</Text>
             <Text style={styles.overviewValue}>
-              ৳ {overview.totalCollected ?? 0}
+              {overview?.totalPcs ?? 0}
             </Text>
           </CustomCard>
 
-          <CustomCard
-            style={[styles.overviewCard, { backgroundColor: Colors.fbColor }]}
-          >
-            <Icon
-              name="alert-circle-outline"
-              size={28}
-              color={Colors.white}
-              style={styles.icon}
-            />
-            <Text style={styles.overviewTitle}>মোট বাকি</Text>
-            <Text style={styles.overviewValue}>৳ {overview.totalDue ?? 0}</Text>
-          </CustomCard> */}
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.theme }]}>
+            <Icon name="cash-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট বিক্রয় টাকা</Text>
+            <Text style={styles.overviewValue}>
+              ৳ {overview?.totalSalesAmount ?? 0}
+            </Text>
+          </CustomCard>
+
+          <CustomCard style={[styles.overviewCard, { backgroundColor: Colors.greenFresh }]}>
+            <Icon name="wallet-outline" size={28} color={Colors.white} style={styles.icon} />
+            <Text style={styles.overviewTitle}>মোট প্রাপ্ত টাকা</Text>
+            <Text style={styles.overviewValue}>
+              ৳ {overview?.totalReceivedAmount ?? 0}
+            </Text>
+          </CustomCard>
         </View>
 
         {/* Recent Sales */}
-        <Text style={styles.sectionTitle}>সাম্প্রতিক বিক্রয়</Text>
-        {recentSales.length > 0 ? (
+        <Text style={styles.sectionTitle}>আজকের সাম্প্রতিক বিক্রয়</Text>
+        {recentSales?.length > 0 ? (
           recentSales.map((sale: any, index: number) => (
             <CustomCard key={index} style={styles.listCard}>
               <View style={styles.listRow}>
-                <View
-                  style={{
-                    flex: 2,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
+                <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
                   <Icon
                     name="cube-outline"
                     size={18}
@@ -151,16 +116,16 @@ const HomeMainIndex = () => {
                     style={{ marginRight: 8 }}
                   />
                   <Text style={styles.listText}>
-                    {sale?.productName ?? sale?._id ?? '-'}
+                    {sale?.productName ?? '-'}
                   </Text>
-                </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={styles.listText}>{sale?.quantity ?? 0} pcs</Text>
                 </View>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={styles.listText}>
-                    ৳ {sale?.totalAmount ?? 0}
+                    {sale?.quantity ?? 0} kg
                   </Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={styles.listText}>৳ {sale?.totalAmount ?? 0}</Text>
                 </View>
                 <View
                   style={[
@@ -184,47 +149,7 @@ const HomeMainIndex = () => {
           ))
         ) : (
           <Text style={{ textAlign: 'center', marginVertical: 10 }}>
-            কোনো সাম্প্রতিক বিক্রয় নেই
-          </Text>
-        )}
-
-        {/* Top Products */}
-        <Text style={styles.sectionTitle}>শীর্ষ প্রোডাক্ট</Text>
-        {topProducts.length > 0 ? (
-          topProducts.map((prod: any, index: number) => (
-            <CustomCard key={index} style={styles.listCard}>
-              <View style={styles.listRow}>
-                <View
-                  style={{
-                    flex: 2,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Icon
-                    name="pricetag-outline"
-                    size={18}
-                    color={Colors.orangeAccent}
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text style={styles.listText}>{prod?._id ?? '-'}</Text>
-                </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={styles.listText}>
-                    {prod?.totalQuantity ?? 0} pcs
-                  </Text>
-                </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={styles.listText}>
-                    ৳ {prod?.totalAmount ?? 0}
-                  </Text>
-                </View>
-              </View>
-            </CustomCard>
-          ))
-        ) : (
-          <Text style={{ textAlign: 'center', marginVertical: 10 }}>
-            কোনো শীর্ষ প্রোডাক্ট নেই
+            আজ কোনো বিক্রয় নেই
           </Text>
         )}
       </ScrollView>
@@ -236,6 +161,7 @@ export default HomeMainIndex;
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingBottom: 30 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   overviewContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -260,8 +186,9 @@ const styles = StyleSheet.create({
     color: Colors.white,
     marginBottom: 6,
     fontWeight: '500',
-    width:'100%',
-    textAlign:'center'
+    textAlign: 'center',
+    flexWrap: 'wrap',
+    width: '90%',
   },
   overviewValue: { fontSize: 20, fontWeight: '700', color: Colors.white },
   sectionTitle: {

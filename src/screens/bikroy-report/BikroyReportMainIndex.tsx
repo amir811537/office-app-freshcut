@@ -1,32 +1,32 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import dayjs from 'dayjs';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Control, useForm } from 'react-hook-form';
 import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  TouchableOpacity,
-  Dimensions,
-  Alert,
   ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
   Modal,
   Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import WrapperContainer from '../../components/WrapperContainer';
-import CustomHeader from '../../components/CustomHeader';
-import { Colors } from '../../constants/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
-import dayjs from 'dayjs';
-import CustomDatePicker from '../../components/CustomDatePicker';
-import { useForm, Control } from 'react-hook-form';
-import { goBack, navigate } from '../../utils/navigationRef';
-import {
-  getAllSales,
-  GetSalesParams,
-  deleteSale,
-  getSaleById,
-} from '../../services/salesService';
 import { showMessage } from 'react-native-flash-message';
+import Icon from 'react-native-vector-icons/Ionicons';
+import CustomDatePicker from '../../components/CustomDatePicker';
+import CustomHeader from '../../components/CustomHeader';
 import CustomLoader from '../../components/CustomLoader';
+import WrapperContainer from '../../components/WrapperContainer';
+import { Colors } from '../../constants/colors';
+import {
+  deleteSale,
+  getAllSales,
+  getSaleById,
+  GetSalesParams,
+} from '../../services/salesService';
+import { goBack, navigate } from '../../utils/navigationRef';
 
 const { width } = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -182,10 +182,10 @@ const BikroyReportMainIndex = () => {
     }
   };
 
-  const handleShare = async () => {
-    if (!saleDetail) return;
+const handleShare = async () => {
+  if (!saleDetail) return;
 
-    const shareText = `
+  const shareText = `
   ==============================
          🧾 বিক্রয় রসিদ       
   ==============================
@@ -198,9 +198,8 @@ const BikroyReportMainIndex = () => {
   📦 পণ্যের তথ্য
   --------------------------------
   ${saleDetail.productName} (${saleDetail.uom})
-  পরিমাণ : ${saleDetail.quantity} × ${saleDetail.price} = ${
-      saleDetail.totalAmount
-    } টাকা
+  পিস সংখ্যা : ${saleDetail.numOfPcs} টি
+  পরিমাণ    : ${saleDetail.quantity} × ${saleDetail.price} = ${saleDetail.totalAmount} টাকা
   
   💰 পেমেন্ট তথ্য
   --------------------------------
@@ -208,9 +207,7 @@ const BikroyReportMainIndex = () => {
   জমা     : ${saleDetail.paidAmount} টাকা
   বাকি    : ${saleDetail.dueAmount} টাকা
   
-  🧑‍💼 বিক্রেতা: ${saleDetail.employee.fullName} (${
-      saleDetail.employee.employeeCode
-    })
+  🧑‍💼 বিক্রেতা: ${saleDetail.employee.fullName} (${saleDetail.employee.employeeCode})
   
   📅 তারিখ: ${dayjs(saleDetail.date).format('DD/MM/YYYY')}
   ✍️ নোট: ${saleDetail.notes || 'কোনো নোট নেই'}
@@ -218,14 +215,15 @@ const BikroyReportMainIndex = () => {
   ==============================
   ধন্যবাদ আমাদের সাথে কেনাকাটার জন্য
   ==============================
-    `;
+  `;
 
-    try {
-      await Share.share({ message: shareText });
-    } catch (error) {
-      showMessage({ message: 'Share failed', type: 'danger' });
-    }
-  };
+  try {
+    await Share.share({ message: shareText });
+  } catch (error) {
+    showMessage({ message: 'Share failed', type: 'danger' });
+  }
+};
+
 
   // 🔹 Render Single Sale Card (Customer card design)
   const renderSaleItem = ({ item }: { item: SaleItem }) => {
@@ -266,14 +264,16 @@ const BikroyReportMainIndex = () => {
         </View>
 
         <Text style={styles.product}>
-          🛒 {item?.productName}({item?.price}) × {item.quantity}={' '}
+          🛒 {item?.productName}({item?.price} × {item.quantity}kg)={' '}
           {item?.totalAmount?.toLocaleString()} টাকা
         </Text>
 
         <Text style={styles.amount}>
-          জমা: {paidAmount?.toLocaleString()} টাকা
+          আজকের জমা: {paidAmount?.toLocaleString()} টাকা
         </Text>
-
+        <Text style={styles.amount}>
+          পিস সংখ্যা: {item?.numOfPcs?.toLocaleString()} টি
+        </Text>
         {dueAmount > 0 && (
           <Text style={[styles.amount, { color: Colors.orangeAccent }]}>
             আজকের বাকি:: {dueAmount?.toLocaleString()} টাকা
@@ -385,6 +385,12 @@ const BikroyReportMainIndex = () => {
                 <Text style={styles.modalTitle}>🧾 বিক্রয় তথ্য</Text>
                 <View style={styles.divider} />
 
+                <View style={styles.section}>
+                  <Text style={styles.modalText}>
+                    📅 {dayjs(saleDetail.date).format('DD/MM/YYYY')}
+                  </Text>
+                </View>
+
                 {/* Customer Info */}
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>👤 ক্রেতার তথ্য</Text>
@@ -408,26 +414,29 @@ const BikroyReportMainIndex = () => {
                   <Text style={styles.modalText}>
                     পরিমাণ: {saleDetail.quantity} × {saleDetail.price} টাকা
                   </Text>
-                  <View style={styles.amountRow}>
-                    <Text style={styles.modalText}>মোট</Text>
-                    <Text style={styles.amountValue}>
-                      {saleDetail.totalAmount.toLocaleString()} টাকা
+                   <View style={styles.amountRow}>
+                    <Text style={styles.modalText}>
+                   
+                      পিস সংখ্যা: {saleDetail.numOfPcs?.toLocaleString()} টি
                     </Text>
                   </View>
                   <View style={styles.amountRow}>
-                    <Text style={styles.modalText}>জমা</Text>
-                    <Text
-                      style={[styles.amountValue, { color: Colors.greenFresh }]}
-                    >
-                      {saleDetail.paidAmount.toLocaleString()} টাকা
+                    <Text style={styles.modalText}>
+                      মোট: {saleDetail.totalAmount.toLocaleString()} টাকা
                     </Text>
                   </View>
                   <View style={styles.amountRow}>
-                    <Text style={styles.modalText}>বাকি</Text>
-                    <Text style={[styles.amountValue, { color: Colors.error }]}>
-                      {saleDetail.dueAmount.toLocaleString()} টাকা
+                    <Text style={styles.modalText}>
+                      জমা: {saleDetail.paidAmount.toLocaleString()} টাকা
                     </Text>
                   </View>
+                  <View style={styles.amountRow}>
+                    <Text style={styles.modalText}>
+                      বাকি: {saleDetail.dueAmount.toLocaleString()} টাকা
+                    </Text>
+                  </View>
+
+                 
                 </View>
 
                 {/* Employee Info */}
@@ -450,11 +459,6 @@ const BikroyReportMainIndex = () => {
                 ) : null}
 
                 {/* Footer */}
-                <View style={styles.section}>
-                  <Text style={styles.modalText}>
-                    📅 {dayjs(saleDetail.date).format('DD/MM/YYYY')}
-                  </Text>
-                </View>
 
                 {/* Buttons */}
                 <View style={styles.buttonRow}>
@@ -662,7 +666,7 @@ const styles = StyleSheet.create({
   },
   amountRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between',
     marginBottom: 2,
   },
   amountValue: {

@@ -214,6 +214,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 6,
     color: Colors.text,
+    width: '100%',
   },
   dropdown: {
     height: 46,

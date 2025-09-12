@@ -71,6 +71,7 @@ export const getSaleById = async (
     const res = await axiosClient.get<ApiResponse<any>>(
       `${endpoints.sales}/${id}`,
     );
+    
     return res.data;
   } catch (error: any) {
     return error?.response?.data || null;
