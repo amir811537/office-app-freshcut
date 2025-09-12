@@ -260,6 +260,8 @@ const styles = StyleSheet.create({
     color: Colors.white,
     marginBottom: 6,
     fontWeight: '500',
+    width:'100%',
+    textAlign:'center'
   },
   overviewValue: { fontSize: 20, fontWeight: '700', color: Colors.white },
   sectionTitle: {
