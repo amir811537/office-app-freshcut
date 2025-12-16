@@ -1,75 +1,158 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+} from 'react-native';
 import WrapperContainer from '../../components/WrapperContainer';
 import CustomHeader from '../../components/CustomHeader';
 import { Colors } from '../../constants/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const AttendanceMainIndex = ({ navigation }: any) => {
   return (
-    <WrapperContainer style={{ backgroundColor: Colors.background }}>
-      <CustomHeader
-        title="অ্যাটেন্ডেন্স"
-  
-      />
+    <WrapperContainer style={styles.wrapper}>
+      <CustomHeader title="Attendance" />
 
       <View style={styles.container}>
-        <View style={styles.content}>
-          <Icon
-            name="time-outline"
-            size={60}
-            color={Colors.theme}
-            style={styles.icon}
+        {/* Daily Attendance */}
+        <TouchableOpacity
+          style={styles.menuCard}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('AttendanceDaily')}
+        >
+          <View style={styles.iconWrap}>
+            <Ionicons
+              name="calendar-outline"
+              size={26}
+              color={Colors.primary}
+            />
+          </View>
+
+          <View style={styles.textWrap}>
+            <Text style={styles.menuTitle}>Daily Attendance</Text>
+            <Text style={styles.menuSubtitle}>
+              Mark present, leave, or absent for each employee
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={Colors.inactive}
           />
-          <Text style={styles.title}>শীঘ্রই আসছে!</Text>
-          <Text style={styles.subtitle}>এই ফিচারটি খুব শীঘ্রই উপলব্ধ হবে</Text>
-        </View>
+        </TouchableOpacity>
+
+        {/* Monthly Report */}
+        <TouchableOpacity
+          style={styles.menuCard}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('AttendanceMonthly')}
+        >
+          <View style={styles.iconWrap}>
+            <Ionicons
+              name="stats-chart-outline"
+              size={26}
+              color={Colors.primary}
+            />
+          </View>
+
+          <View style={styles.textWrap}>
+            <Text style={styles.menuTitle}>Monthly Report</Text>
+            <Text style={styles.menuSubtitle}>
+              View monthly attendance summary
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={Colors.inactive}
+          />
+        </TouchableOpacity>
+
+        {/* Yearly Report */}
+        <TouchableOpacity
+          style={styles.menuCard}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('AttendanceYearly')}
+        >
+          <View style={styles.iconWrap}>
+            <Ionicons
+              name="bar-chart-outline"
+              size={26}
+              color={Colors.primary}
+            />
+          </View>
+
+          <View style={styles.textWrap}>
+            <Text style={styles.menuTitle}>Yearly Report</Text>
+            <Text style={styles.menuSubtitle}>
+              Analyze yearly attendance performance
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={Colors.inactive}
+          />
+        </TouchableOpacity>
       </View>
     </WrapperContainer>
   );
 };
 
 export default AttendanceMainIndex;
-
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
-    // justifyContent: 'center',
-    // alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
+
+  container: {
     padding: 20,
   },
-  content: {
+
+  menuCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.surface,
     borderRadius: 16,
-    padding: 30,
-    width: '100%',
+    padding: 16,
+    marginBottom: 16,
+
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  icon: {
-    marginBottom: 20,
+
+  iconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
-  title: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: Colors.black,
-    marginBottom: 10,
-    textAlign: 'center',
+
+  textWrap: {
+    flex: 1,
   },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.black,
-    marginBottom: 15,
-    textAlign: 'center',
+
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 4,
   },
-  message: {
-    fontSize: 14,
-    color: Colors.error,
-    textAlign: 'center',
-    lineHeight: 22,
+
+  menuSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
   },
 });

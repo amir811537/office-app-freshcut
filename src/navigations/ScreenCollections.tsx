@@ -1,3 +1,4 @@
+import AttendanceDaily from '../screens/attendance/AttendanceDaily';
 import AttendanceMainIndex from '../screens/attendance/AttendanceMainIndex';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignUpScreen from '../screens/auth/SignUpScreen';
@@ -68,5 +69,9 @@ export const dashboardStack = [
     name: 'CustomerCreate',
     component: CustomerCreate,
   },
+  {
+    name:'AttendanceDaily',
+    component:AttendanceDaily
+  }
 ];
 export const mergedStacks = [...dashboardStack, ...authStack];

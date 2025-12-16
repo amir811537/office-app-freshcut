@@ -1,6 +1,5 @@
 import { NavigationContainer } from '@react-navigation/native';
 import React from 'react';
-import { StyleSheet } from 'react-native';
 import { navigationRef } from '../utils/navigationRef';
 import MainStack from './MainStack';
 const RootNavigator = () => {
@@ -13,4 +12,3 @@ const RootNavigator = () => {
 
 export default RootNavigator;
 
-const styles = StyleSheet.create({});

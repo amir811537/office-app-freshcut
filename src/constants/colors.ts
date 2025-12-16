@@ -1,34 +1,51 @@
 export enum Colors {
-  theme = '#E94B3C', // Warm, appetizing red (main brand color)
-  background = '#FFF8F2', // Soft creamy background for a cozy feel
-  card = '#FFEDE7', // Light peach card background
-  text = '#4A4A4A', // Dark gray for good readability, softer than black
-  border = '#E0B084', // Warm beige border color
-  fbColor = '#1877F2', // Facebook blue (if you use FB login)
-  white = '#FFFFFF', // Pure white
-  inactive_tint = '#C4C4C4', // Light gray for inactive icons/text
-  inactive = '#A9A9A9', // Slightly darker gray for inactive state
-  disabled = '#F5F5F5', // Very light gray for disabled elements
-  light_gray = '#E0E0E0', // Neutral light gray
-  like = '#FF6F61', // Coral red for like/favorite actions
-  lightText = '#7D7D7D', // Medium gray for secondary text
-  black = '#2C2C2C', // Soft black/dark charcoal
-  greenFresh = '#6ABA63', // Fresh green accent (for herbs, veggies)
-  orangeAccent = '#F2994A', // Orange accent for highlights/buttons
+  /* ================= Brand ================= */
+  primary = '#FF6F00',        // Main brand orange
+  primaryDark = '#E65100',    // Header / pressed state
+  primaryLight = '#FFE0B2',   // Light highlights / chips
 
-  // Additional colors:
-  success = '#28A745', // Success (green) for confirmations
-  error = '#DC3545', // Error (red) for alerts
-  warning = '#FFC107', // Warning (yellow) for cautions
-  info = '#17A2B8', // Info (teal) for information
-  shadow = 'rgba(0,0,0,0.1)', // Light shadow color
-  overlay = 'rgba(0,0,0,0.4)', // Overlay for modals/dark backgrounds
-  buttonPrimary = '#E94B3C', // Primary button (same as theme)
-  buttonSecondary = '#F2994A', // Secondary button (orange accent)
-  placeholder = '#BDBDBD', // Placeholder text color
-  divider = '#D6D6D6', // Divider lines
+  /* ================= Backgrounds ================= */
+  background = '#FFFFFF',     // Main app background (clean)
+  surfaceLight = '#FFF8F2',   // Light surface (sections)
+  surface = '#FFF3E8',        // Cards / containers
+  surfaceDark = '#F1E9E5',    // Elevated cards
 
-  // Neutrals for backgrounds and UI surfaces
-  surfaceLight = '#FFF9F6', // Light surface background
-  surfaceDark = '#F1E9E5', // Slightly darker surface for cards etc.
+  /* ================= Text ================= */
+  textPrimary = '#263238',    // Main text (better contrast)
+  textSecondary = '#607D8B',  // Secondary text
+  textLight = '#9E9E9E',      // Placeholder / hint
+  white = '#FFFFFF',
+  black = '#1F1F1F',
+
+  /* ================= Borders & Dividers ================= */
+  border = '#E0E0E0',
+  divider = '#EEEEEE',
+
+  /* ================= Buttons ================= */
+  buttonPrimary = '#FF6F00',
+  buttonPrimaryText = '#FFFFFF',
+  buttonSecondary = '#F2994A',
+  buttonDisabled = '#F5F5F5',
+
+  /* ================= States ================= */
+  success = '#2E7D32',
+  error = '#D32F2F',
+  warning = '#FFC107',
+  info = '#0288D1',
+
+  /* ================= Icons & Inactive ================= */
+  inactive = '#BDBDBD',
+  inactiveTint = '#C4C4C4',
+
+  /* ================= Accents ================= */
+  orangeAccent = '#F2994A',
+  greenFresh = '#43A047',     // Fresh / halal / available
+  like = '#FF5252',
+
+  /* ================= Social ================= */
+  fbColor = '#1877F2',
+
+  /* ================= Effects ================= */
+  shadow = 'rgba(0,0,0,0.12)',
+  overlay = 'rgba(0,0,0,0.45)',
 }
